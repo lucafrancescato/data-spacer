@@ -66,19 +66,23 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		Name:      networkPolicyName,
 	}
 
-	// TODO Handle namespace deletion and consequent network policy deletion
-
 	namespace := corev1.Namespace{}
 	if err := r.Get(ctx, nsName, &namespace); err != nil {
 		err = client.IgnoreNotFound(err)
 		if err == nil {
 			klog.Infof("Skipping not found Namespace %q", nsName.Name)
-			// Delete associated Network Policy if found
+			// Delete relevant Network Policy if found
 			if err := r.deleteNetworkPolicy(ctx, npNsName); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
 		return ctrl.Result{}, err
+	}
+
+	// Intercept if the object is under deletion
+	if !namespace.ObjectMeta.DeletionTimestamp.IsZero() {
+		klog.Infof("Namespace %q is under deletion. Relevant resources are going to be deleted as well.", nsName.Name)
+		return ctrl.Result{}, nil
 	}
 
 	if v, ok := namespace.Labels[dataSpaceLabel]; !ok {
