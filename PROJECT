@@ -1,0 +1,6 @@
+domain: data-space.liqo.io
+layout:
+- go.kubebuilder.io/v3
+projectName: data-space
+repo: data-space.liqo.io
+version: "3"
