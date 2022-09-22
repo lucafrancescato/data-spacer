@@ -3,4 +3,10 @@ layout:
 - go.kubebuilder.io/v3
 projectName: data-space
 repo: data-space.liqo.io
+resources:
+- controller: true
+  group: core
+  kind: Namespace
+  path: k8s.io/api/core/v1
+  version: v1
 version: "3"
