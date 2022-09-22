@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/name: namespace
     app.kubernetes.io/instance: system
     app.kubernetes.io/component: manager
-    app.kubernetes.io/created-by: data-space
-    app.kubernetes.io/part-of: data-space
+    app.kubernetes.io/created-by: data-spacer
+    app.kubernetes.io/part-of: data-spacer
     app.kubernetes.io/managed-by: kustomize
   name: system
 ---
@@ -21,8 +21,8 @@ metadata:
     app.kubernetes.io/name: deployment
     app.kubernetes.io/instance: controller-manager
     app.kubernetes.io/component: manager
-    app.kubernetes.io/created-by: data-space
-    app.kubernetes.io/part-of: data-space
+    app.kubernetes.io/created-by: data-spacer
+    app.kubernetes.io/part-of: data-spacer
     app.kubernetes.io/managed-by: kustomize
 spec:
   selector:

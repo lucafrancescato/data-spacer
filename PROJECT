@@ -1,7 +1,7 @@
 domain: data-space.liqo.io
 layout:
 - go.kubebuilder.io/v3
-projectName: data-space
+projectName: data-spacer
 repo: data-space.liqo.io
 resources:
 - controller: true
