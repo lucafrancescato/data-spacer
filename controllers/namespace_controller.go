@@ -20,10 +20,20 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+const (
+	dataSpaceLabel            = "data-space/enabled"
+	dataSpaceDestinationLabel = "data-space-dest/enabled"
+	networkPolicyName         = "data-space-network-policy"
 )
 
 // NamespaceReconciler reconciles a Namespace object
@@ -48,9 +58,117 @@ type NamespaceReconciler struct {
 func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	nsName := req.NamespacedName
+	klog.Infof("Reconcile Namespace %q", nsName.Name)
+
+	npNsName := types.NamespacedName{
+		Namespace: nsName.Name,
+		Name:      networkPolicyName,
+	}
+
+	// TODO Handle namespace deletion and consequent network policy deletion
+
+	namespace := corev1.Namespace{}
+	if err := r.Get(ctx, nsName, &namespace); err != nil {
+		err = client.IgnoreNotFound(err)
+		if err == nil {
+			klog.Infof("Skipping not found Namespace %q", nsName.Name)
+			// Delete associated Network Policy if found
+			if err := r.deleteNetworkPolicy(ctx, npNsName); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, err
+	}
+
+	if v, ok := namespace.Labels[dataSpaceLabel]; !ok {
+		klog.Infof("Skipping Namespace %q as it does not contain the %q label", nsName.Name, dataSpaceLabel)
+		return ctrl.Result{}, nil
+	} else if v != "true" {
+		klog.Infof("Skipping Namespace %q as it is not enabled for data spaces", nsName.Name)
+		// Delete associated Network Policy if found
+		if err := r.deleteNetworkPolicy(ctx, npNsName); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// Create NetworkPolicy
+	networkPolicy := forgeNetworkPolicy(nsName.Name)
+	if err := r.createNetworkPolicy(ctx, nsName.Name, networkPolicy); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *NamespaceReconciler) deleteNetworkPolicy(ctx context.Context, nsName types.NamespacedName) error {
+	var networkPolicy netv1.NetworkPolicy
+	if err := r.Client.Get(ctx, nsName, &networkPolicy); err != nil {
+		err = client.IgnoreNotFound(err)
+		if err == nil {
+			klog.Infof("Skipping not found NetworkPolicy %q in namespace %q", networkPolicyName, nsName.Namespace)
+		}
+		return err
+	}
+
+	r.Client.Delete(ctx, &networkPolicy)
+	klog.Infof("Deleted NetworkPolicy %q in namespace %q", networkPolicyName, nsName.Namespace)
+	return nil
+}
+
+func (r *NamespaceReconciler) createNetworkPolicy(ctx context.Context, namespaceName string, networkPolicy *netv1.NetworkPolicy) error {
+	if err := r.Client.Create(ctx, networkPolicy); err != nil {
+		err = client.IgnoreAlreadyExists(err)
+		if err == nil {
+			klog.Infof("NetworkPolicy %q already exists in namespace %q", networkPolicyName, namespaceName)
+			return nil
+		}
+		klog.Infof("Error while creating NetworkPolicy %q in Namespace %q", networkPolicyName, namespaceName)
+		return err
+	}
+	klog.Infof("Created NetworkPolicy %q in Namespace %q", networkPolicyName, namespaceName)
+	return nil
+}
+
+func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
+	return &netv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      networkPolicyName,
+			Namespace: namespaceName,
+		},
+		Spec: netv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					dataSpaceLabel: "true",
+				},
+			},
+			PolicyTypes: []netv1.PolicyType{
+				netv1.PolicyTypeIngress,
+				netv1.PolicyTypeEgress,
+			},
+			Ingress: []netv1.NetworkPolicyIngressRule{{
+				From: []netv1.NetworkPolicyPeer{{
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							dataSpaceLabel:            "true", // For current namespace
+							dataSpaceDestinationLabel: "true", // For other namespaces
+						},
+					},
+				}},
+			}},
+			Egress: []netv1.NetworkPolicyEgressRule{{
+				To: []netv1.NetworkPolicyPeer{{
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							dataSpaceLabel:            "true", // For current namespace
+							dataSpaceDestinationLabel: "true", // For other namespaces
+						},
+					},
+				}},
+			}},
+		},
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
