@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"data-space.liqo.io/controllers"
+	podwebhook "data-space.liqo.io/pkg/webhooks/pod"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -96,6 +97,7 @@ func main() {
 	}
 	//+kubebuilder:scaffold:builder
 
+	// Register healthiness probes
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
@@ -104,6 +106,9 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	// Register webhooks
+	mgr.GetWebhookServer().Register("/mutate/pod", podwebhook.New(mgr.GetClient()))
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
