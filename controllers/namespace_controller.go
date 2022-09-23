@@ -114,6 +114,8 @@ func (r *NamespaceReconciler) deleteNetworkPolicy(ctx context.Context, nsName ty
 		err = client.IgnoreNotFound(err)
 		if err == nil {
 			klog.Infof("Skipping not found NetworkPolicy %q in namespace %q", networkPolicyName, nsName.Namespace)
+		} else {
+			klog.Errorf("Error while getting NetworkPolicy %q in namespace %q", networkPolicyName, nsName.Namespace)
 		}
 		return err
 	}
@@ -128,9 +130,9 @@ func (r *NamespaceReconciler) createNetworkPolicy(ctx context.Context, namespace
 		err = client.IgnoreAlreadyExists(err)
 		if err == nil {
 			klog.Infof("NetworkPolicy %q already exists in namespace %q", networkPolicyName, namespaceName)
-			return nil
+		} else {
+			klog.Errorf("Error while creating NetworkPolicy %q in Namespace %q", networkPolicyName, namespaceName)
 		}
-		klog.Infof("Error while creating NetworkPolicy %q in Namespace %q", networkPolicyName, namespaceName)
 		return err
 	}
 	klog.Infof("Created NetworkPolicy %q in Namespace %q", networkPolicyName, namespaceName)
