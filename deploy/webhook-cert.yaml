@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: manager-webhook-cert
+  namespace: data-spacer
+spec:
+  secretName: manager-webhook-secret
+  dnsNames:
+    - manager-webhook-svc
+    - manager-webhook-svc.data-spacer.svc
+    - manager-webhook-svc.data-spacer.svc.cluster.local
+    - localhost
+    - 127.0.0.1
+  issuerRef:
+    kind: ClusterIssuer
+    name: clusterissuer

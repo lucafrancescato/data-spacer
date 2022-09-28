@@ -1,0 +1,27 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: manager-webhook-config
+  annotations:
+    cert-manager.io/inject-ca-from: data-spacer/manager-webhook-cert
+webhooks:
+  - name: pod.mutate.data-space.liqo.io
+    failurePolicy: Fail
+    admissionReviewVersions: ["v1", "v1beta1"]
+    namespaceSelector:
+      matchExpressions:
+        - key: environment
+          operator: In
+          values: ["data-space"]
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+    sideEffects: None
+    clientConfig:
+      service:
+        name: manager-webhook-svc
+        namespace: data-spacer
+        path: /mutate/pod
+        port: 9443
