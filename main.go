@@ -33,7 +33,6 @@ import (
 
 	"data-space.liqo.io/controllers"
 	podwebhook "data-space.liqo.io/pkg/webhooks/pod"
-	//+kubebuilder:scaffold:imports
 )
 
 var (
@@ -43,8 +42,6 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
-	//+kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -95,7 +92,6 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Namespace")
 		os.Exit(1)
 	}
-	//+kubebuilder:scaffold:builder
 
 	// Register healthiness probes
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

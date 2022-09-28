@@ -28,8 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// +kubebuilder:webhook:path=/mutate/pod,mutating=true,failurePolicy=fail,groups=core,resources=pods,verbs=create;update,versions=v1,name=pod.mutate.data-space.liqo.io,admissionReviewVersions=v1,sideEffects=none
-
 type mutator struct {
 	client  client.Client
 	decoder *admission.Decoder
