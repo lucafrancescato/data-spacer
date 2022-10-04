@@ -29,6 +29,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"data-space.liqo.io/consts"
 )
 
 // NamespaceReconciler reconciles a Namespace object
@@ -61,11 +63,11 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	npNsName := types.NamespacedName{
 		Namespace: nsName.Name,
-		Name:      networkPolicyName,
+		Name:      consts.NetworkPolicyName,
 	}
 	cmNsName := types.NamespacedName{
 		Namespace: nsName.Name,
-		Name:      configMapName,
+		Name:      consts.ConfigMapName,
 	}
 
 	namespace := corev1.Namespace{}
@@ -90,8 +92,8 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	if v, ok := namespace.Labels[dataSpaceLabel]; !ok {
-		klog.Infof("Skipping Namespace %q as it does not contain the %q label", nsName.Name, dataSpaceLabel)
+	if v, ok := namespace.Labels[consts.DataSpaceLabel]; !ok {
+		klog.Infof("Skipping Namespace %q as it does not contain the %q label", nsName.Name, consts.DataSpaceLabel)
 		return ctrl.Result{}, nil
 	} else if v != "true" {
 		klog.Infof("Skipping Namespace %q as it is not enabled for data spaces", nsName.Name)
@@ -128,15 +130,15 @@ func (r *NamespaceReconciler) deleteNetworkPolicy(ctx context.Context, nsName ty
 	if err := r.Client.Get(ctx, nsName, &networkPolicy); err != nil {
 		err = client.IgnoreNotFound(err)
 		if err == nil {
-			klog.Infof("Skipping not found NetworkPolicy %q in namespace %q", networkPolicyName, nsName.Namespace)
+			klog.Infof("Skipping not found NetworkPolicy %q in namespace %q", consts.NetworkPolicyName, nsName.Namespace)
 		} else {
-			klog.Errorf("Error while getting NetworkPolicy %q in namespace %q", networkPolicyName, nsName.Namespace)
+			klog.Errorf("Error while getting NetworkPolicy %q in namespace %q", consts.NetworkPolicyName, nsName.Namespace)
 		}
 		return err
 	}
 
 	r.Client.Delete(ctx, &networkPolicy)
-	klog.Infof("Deleted NetworkPolicy %q in namespace %q", networkPolicyName, nsName.Namespace)
+	klog.Infof("Deleted NetworkPolicy %q in namespace %q", consts.NetworkPolicyName, nsName.Namespace)
 	return nil
 }
 
@@ -145,15 +147,15 @@ func (r *NamespaceReconciler) deleteConfigMap(ctx context.Context, nsName types.
 	if err := r.Client.Get(ctx, nsName, &configMap); err != nil {
 		err = client.IgnoreNotFound(err)
 		if err == nil {
-			klog.Infof("Skipping not found ConfigMap %q in namespace %q", configMapName, nsName.Namespace)
+			klog.Infof("Skipping not found ConfigMap %q in namespace %q", consts.ConfigMapName, nsName.Namespace)
 		} else {
-			klog.Errorf("Error while getting ConfigMap %q in namespace %q", configMapName, nsName.Namespace)
+			klog.Errorf("Error while getting ConfigMap %q in namespace %q", consts.ConfigMapName, nsName.Namespace)
 		}
 		return err
 	}
 
 	r.Client.Delete(ctx, &configMap)
-	klog.Infof("Deleted ConfigMap %q in namespace %q", configMapName, nsName.Namespace)
+	klog.Infof("Deleted ConfigMap %q in namespace %q", consts.ConfigMapName, nsName.Namespace)
 	return nil
 }
 
@@ -161,13 +163,13 @@ func (r *NamespaceReconciler) createNetworkPolicy(ctx context.Context, namespace
 	if err := r.Client.Create(ctx, networkPolicy); err != nil {
 		err = client.IgnoreAlreadyExists(err)
 		if err == nil {
-			klog.Infof("NetworkPolicy %q already exists in namespace %q", networkPolicyName, namespaceName)
+			klog.Infof("NetworkPolicy %q already exists in namespace %q", consts.NetworkPolicyName, namespaceName)
 		} else {
-			klog.Errorf("Error while creating NetworkPolicy %q in namespace %q", networkPolicyName, namespaceName)
+			klog.Errorf("Error while creating NetworkPolicy %q in namespace %q", consts.NetworkPolicyName, namespaceName)
 		}
 		return err
 	}
-	klog.Infof("Created NetworkPolicy %q in namespace %q", networkPolicyName, namespaceName)
+	klog.Infof("Created NetworkPolicy %q in namespace %q", consts.NetworkPolicyName, namespaceName)
 	return nil
 }
 
@@ -175,26 +177,26 @@ func (r *NamespaceReconciler) createConfigMap(ctx context.Context, namespaceName
 	if err := r.Client.Create(ctx, configMap); err != nil {
 		err = client.IgnoreAlreadyExists(err)
 		if err == nil {
-			klog.Infof("ConfigMap %q already exists in namespace %q", configMapName, namespaceName)
+			klog.Infof("ConfigMap %q already exists in namespace %q", consts.ConfigMapName, namespaceName)
 		} else {
-			klog.Errorf("Error while creating ConfigMap %q in namespace %q", configMapName, namespaceName)
+			klog.Errorf("Error while creating ConfigMap %q in namespace %q", consts.ConfigMapName, namespaceName)
 		}
 		return err
 	}
-	klog.Infof("Created ConfigMap %q in namespace %q", configMapName, namespaceName)
+	klog.Infof("Created ConfigMap %q in namespace %q", consts.ConfigMapName, namespaceName)
 	return nil
 }
 
 func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 	return &netv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      networkPolicyName,
+			Name:      consts.NetworkPolicyName,
 			Namespace: namespaceName,
 		},
 		Spec: netv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					dataSpaceLabel: "true",
+					consts.DataSpaceLabel: "true",
 				},
 			},
 			PolicyTypes: []netv1.PolicyType{
@@ -205,8 +207,8 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 				From: []netv1.NetworkPolicyPeer{{
 					NamespaceSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							dataSpaceLabel:            "true", // For current namespace
-							dataSpaceDestinationLabel: "true", // For other namespaces
+							consts.DataSpaceLabel:            "true", // For current namespace
+							consts.DataSpaceDestinationLabel: "true", // For other namespaces
 						},
 					},
 				}},
@@ -215,8 +217,8 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 				To: []netv1.NetworkPolicyPeer{{
 					NamespaceSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							dataSpaceLabel:            "true", // For current namespace
-							dataSpaceDestinationLabel: "true", // For other namespaces
+							consts.DataSpaceLabel:            "true", // For current namespace
+							consts.DataSpaceDestinationLabel: "true", // For other namespaces
 						},
 					},
 				}},
@@ -236,7 +238,7 @@ func forgeConfigMap(namespaceName string) (*corev1.ConfigMap, error) {
 
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      configMapName,
+			Name:      consts.ConfigMapName,
 			Namespace: namespaceName,
 		},
 		Data: map[string]string{
@@ -250,8 +252,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 		Admin: Admin{
 			Address: Address{
 				SocketAddress: SocketAddress{
-					Address:   LOCALHOST_ADDR,
-					PortValue: adminPort,
+					Address:   consts.LOCALHOST_ADDR,
+					PortValue: consts.AdminPort,
 				},
 			},
 		},
@@ -263,24 +265,24 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					Name: "egress_tcp_listener",
 					Address: Address{
 						SocketAddress: SocketAddress{
-							Address:   LOCALHOST_ADDR,
-							PortValue: egressTcpPort,
+							Address:   consts.LOCALHOST_ADDR,
+							PortValue: consts.EgressTcpPort,
 						},
 					},
 					FilterChains: []FilterChain{
 						{
 							Filters: []NameAndConfig{
 								{
-									Name: TcpProxyTypeName,
+									Name: consts.TcpProxyTypeName,
 									TypedConfig: TypedConfig{
-										Type:       TcpProxyTypeUrl,
-										StatPrefix: egressTcpStatPrefixName,
-										Cluster:    egressClusterName,
+										Type:       consts.TcpProxyTypeUrl,
+										StatPrefix: consts.EgressTcpStatPrefixName,
+										Cluster:    consts.EgressClusterName,
 										// Log access to /dev/stdout
 										AccessLog: []NameAndConfig{{
-											Name: AccessLogTypeName,
+											Name: consts.AccessLogTypeName,
 											TypedConfig: TypedConfig{
-												Type: AccessLogTypeUrl,
+												Type: consts.AccessLogTypeUrl,
 											},
 										}},
 									},
@@ -290,9 +292,9 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					},
 					ListenerFilters: []NameAndConfig{
 						{
-							Name: OriginalDstListenerFilterTypeName,
+							Name: consts.OriginalDstListenerFilterTypeName,
 							TypedConfig: TypedConfig{
-								Type: OriginalDstListenerFilterTypeUrl,
+								Type: consts.OriginalDstListenerFilterTypeUrl,
 							},
 						},
 					},
@@ -302,24 +304,24 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					Name: "ingress_tcp_listener",
 					Address: Address{
 						SocketAddress: SocketAddress{
-							Address:   ANY_ADDR,
-							PortValue: ingressTcpPort,
+							Address:   consts.ANY_ADDR,
+							PortValue: consts.IngressTcpPort,
 						},
 					},
 					FilterChains: []FilterChain{
 						{
 							Filters: []NameAndConfig{
 								{
-									Name: TcpProxyTypeName,
+									Name: consts.TcpProxyTypeName,
 									TypedConfig: TypedConfig{
-										Type:       TcpProxyTypeUrl,
-										StatPrefix: ingressTcpStatPrefixName,
-										Cluster:    ingressClusterName,
+										Type:       consts.TcpProxyTypeUrl,
+										StatPrefix: consts.IngressTcpStatPrefixName,
+										Cluster:    consts.IngressClusterName,
 										// Log access to /dev/stdout
 										AccessLog: []NameAndConfig{{
-											Name: AccessLogTypeName,
+											Name: consts.AccessLogTypeName,
 											TypedConfig: TypedConfig{
-												Type: AccessLogTypeUrl,
+												Type: consts.AccessLogTypeUrl,
 											},
 										}},
 									},
@@ -329,9 +331,9 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					},
 					ListenerFilters: []NameAndConfig{
 						{
-							Name: OriginalDstListenerFilterTypeName,
+							Name: consts.OriginalDstListenerFilterTypeName,
 							TypedConfig: TypedConfig{
-								Type: OriginalDstListenerFilterTypeUrl,
+								Type: consts.OriginalDstListenerFilterTypeUrl,
 							},
 						},
 					},
@@ -341,35 +343,35 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					Name: "egress_http_listener",
 					Address: Address{
 						SocketAddress: SocketAddress{
-							Address:   LOCALHOST_ADDR,
-							PortValue: egressHttpPort,
+							Address:   consts.LOCALHOST_ADDR,
+							PortValue: consts.EgressHttpPort,
 						},
 					},
 					FilterChains: []FilterChain{
 						{
 							Filters: []NameAndConfig{
 								{
-									Name: HttpConnectionManagerTypeName,
+									Name: consts.HttpConnectionManagerTypeName,
 									TypedConfig: TypedConfig{
-										Type:       HttpConnectionManagerTypeUrl,
-										StatPrefix: egressHttpStatPrefixName,
+										Type:       consts.HttpConnectionManagerTypeUrl,
+										StatPrefix: consts.EgressHttpStatPrefixName,
 										HttpFilters: []NameAndConfig{
 											// Forward
 											{
-												Name: DynamicForwardProxyFilterTypeName,
+												Name: consts.DynamicForwardProxyFilterTypeName,
 												TypedConfig: TypedConfig{
-													Type: DynamicForwardProxyFilterTypeUrl,
+													Type: consts.DynamicForwardProxyFilterTypeUrl,
 													DnsCacheConfig: DnsCacheConfig{
-														Name:            dnsCacheConfigName,
-														DnsLookupFamily: Ipv4Only,
+														Name:            consts.DnsCacheConfigName,
+														DnsLookupFamily: consts.Ipv4Only,
 													},
 												},
 											},
 											// Router
 											{
-												Name: RouterTypeName,
+												Name: consts.RouterTypeName,
 												TypedConfig: TypedConfig{
-													Type: RouterTypeUrl,
+													Type: consts.RouterTypeUrl,
 												},
 											},
 										},
@@ -386,11 +388,11 @@ func forgeEnvoyConfig() *EnvoyConfig {
 																Prefix: "/host-rewrite",
 															},
 															Route: Route{
-																Cluster: egressForwardClusterName,
+																Cluster: consts.EgressForwardClusterName,
 															},
 															TypedPerFilterConfig: TypedPerFilterConfig{
 																DynamicForwardProxyType: DynamicForwardProxyType{
-																	Type:               DynamicForwardProxyRouteTypeUrl,
+																	Type:               consts.DynamicForwardProxyRouteTypeUrl,
 																	HostRewriteLiteral: "dst-svc.dst-space.svc.cluster.local",
 																},
 															},
@@ -401,7 +403,7 @@ func forgeEnvoyConfig() *EnvoyConfig {
 																Prefix: "/",
 															},
 															Route: Route{
-																Cluster: egressForwardClusterName,
+																Cluster: consts.EgressForwardClusterName,
 															},
 														},
 													},
@@ -410,9 +412,9 @@ func forgeEnvoyConfig() *EnvoyConfig {
 										},
 										// Log access to /dev/stdout
 										AccessLog: []NameAndConfig{{
-											Name: AccessLogTypeName,
+											Name: consts.AccessLogTypeName,
 											TypedConfig: TypedConfig{
-												Type: AccessLogTypeUrl,
+												Type: consts.AccessLogTypeUrl,
 											},
 										}},
 									},
@@ -426,35 +428,35 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					Name: "ingress_http_listener",
 					Address: Address{
 						SocketAddress: SocketAddress{
-							Address:   ANY_ADDR,
-							PortValue: ingressHttpPort,
+							Address:   consts.ANY_ADDR,
+							PortValue: consts.IngressHttpPort,
 						},
 					},
 					FilterChains: []FilterChain{
 						{
 							Filters: []NameAndConfig{
 								{
-									Name: HttpConnectionManagerTypeName,
+									Name: consts.HttpConnectionManagerTypeName,
 									TypedConfig: TypedConfig{
-										Type:       HttpConnectionManagerTypeUrl,
-										StatPrefix: ingressHttpStatPrefixName,
+										Type:       consts.HttpConnectionManagerTypeUrl,
+										StatPrefix: consts.IngressHttpStatPrefixName,
 										HttpFilters: []NameAndConfig{
 											// Forward
 											{
-												Name: DynamicForwardProxyFilterTypeName,
+												Name: consts.DynamicForwardProxyFilterTypeName,
 												TypedConfig: TypedConfig{
-													Type: DynamicForwardProxyFilterTypeUrl,
+													Type: consts.DynamicForwardProxyFilterTypeUrl,
 													DnsCacheConfig: DnsCacheConfig{
-														Name:            dnsCacheConfigName,
-														DnsLookupFamily: Ipv4Only,
+														Name:            consts.DnsCacheConfigName,
+														DnsLookupFamily: consts.Ipv4Only,
 													},
 												},
 											},
 											// Router
 											{
-												Name: RouterTypeName,
+												Name: consts.RouterTypeName,
 												TypedConfig: TypedConfig{
-													Type: RouterTypeUrl,
+													Type: consts.RouterTypeUrl,
 												},
 											},
 										},
@@ -471,7 +473,7 @@ func forgeEnvoyConfig() *EnvoyConfig {
 																Prefix: "/",
 															},
 															Route: Route{
-																Cluster: ingressForwardClusterName,
+																Cluster: consts.IngressForwardClusterName,
 															},
 														},
 													},
@@ -480,9 +482,9 @@ func forgeEnvoyConfig() *EnvoyConfig {
 										},
 										// Log access to /dev/stdout
 										AccessLog: []NameAndConfig{{
-											Name: AccessLogTypeName,
+											Name: consts.AccessLogTypeName,
 											TypedConfig: TypedConfig{
-												Type: AccessLogTypeUrl,
+												Type: consts.AccessLogTypeUrl,
 											},
 										}},
 									},
@@ -495,10 +497,10 @@ func forgeEnvoyConfig() *EnvoyConfig {
 			Clusters: []Cluster{
 				// Egress cluster
 				{
-					Name:            egressClusterName,
-					DnsLookupFamily: Ipv4Only,
-					Type:            OriginalDstType,
-					LbPolicy:        OriginalDstLbPolicy,
+					Name:            consts.EgressClusterName,
+					DnsLookupFamily: consts.Ipv4Only,
+					Type:            consts.OriginalDstType,
+					LbPolicy:        consts.OriginalDstLbPolicy,
 					ConnectTimeout:  "6s",
 					OriginalDstLbConfig: OriginalDstLbConfig{
 						UseHttpHeader: true,
@@ -506,10 +508,10 @@ func forgeEnvoyConfig() *EnvoyConfig {
 				},
 				// Ingress cluster
 				{
-					Name:            ingressClusterName,
-					DnsLookupFamily: Ipv4Only,
-					Type:            OriginalDstType,
-					LbPolicy:        OriginalDstLbPolicy,
+					Name:            consts.IngressClusterName,
+					DnsLookupFamily: consts.Ipv4Only,
+					Type:            consts.OriginalDstType,
+					LbPolicy:        consts.OriginalDstLbPolicy,
 					ConnectTimeout:  "6s",
 					OriginalDstLbConfig: OriginalDstLbConfig{
 						UseHttpHeader: true,
@@ -517,32 +519,32 @@ func forgeEnvoyConfig() *EnvoyConfig {
 				},
 				// Egress forward cluster
 				{
-					Name:           egressForwardClusterName,
-					LbPolicy:       OriginalDstLbPolicy,
+					Name:           consts.EgressForwardClusterName,
+					LbPolicy:       consts.OriginalDstLbPolicy,
 					ConnectTimeout: "6s",
 					ClusterType: NameAndConfig{
-						Name: DynamicForwardProxyClusterTypeName,
+						Name: consts.DynamicForwardProxyClusterTypeName,
 						TypedConfig: TypedConfig{
-							Type: DynamicForwardProxyClusterTypeUrl,
+							Type: consts.DynamicForwardProxyClusterTypeUrl,
 							DnsCacheConfig: DnsCacheConfig{
-								Name:            dnsCacheConfigName,
-								DnsLookupFamily: Ipv4Only,
+								Name:            consts.DnsCacheConfigName,
+								DnsLookupFamily: consts.Ipv4Only,
 							},
 						},
 					},
 				},
 				// Ingress forward cluster
 				{
-					Name:           ingressForwardClusterName,
-					LbPolicy:       OriginalDstLbPolicy,
+					Name:           consts.IngressForwardClusterName,
+					LbPolicy:       consts.OriginalDstLbPolicy,
 					ConnectTimeout: "6s",
 					ClusterType: NameAndConfig{
-						Name: DynamicForwardProxyClusterTypeName,
+						Name: consts.DynamicForwardProxyClusterTypeName,
 						TypedConfig: TypedConfig{
-							Type: DynamicForwardProxyClusterTypeUrl,
+							Type: consts.DynamicForwardProxyClusterTypeUrl,
 							DnsCacheConfig: DnsCacheConfig{
-								Name:            dnsCacheConfigName,
-								DnsLookupFamily: Ipv4Only,
+								Name:            consts.DnsCacheConfigName,
+								DnsLookupFamily: consts.Ipv4Only,
 							},
 						},
 					},

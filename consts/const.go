@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package consts
 
 // Network constants
 const (
@@ -24,28 +24,28 @@ const (
 
 // App constants
 const (
-	dataSpaceLabel            = "data-space/enabled"
-	dataSpaceDestinationLabel = "data-space-dest/enabled"
-	networkPolicyName         = "data-space-network-policy"
-	configMapName             = "envoy-config"
+	DataSpaceLabel            = "data-space/enabled"
+	DataSpaceDestinationLabel = "data-space-dest/enabled"
+	NetworkPolicyName         = "data-space-network-policy"
+	ConfigMapName             = "envoy-config"
 )
 
 // Envoy config constants
 const (
-	adminPort                 = 9901
-	egressTcpPort             = 13031
-	egressHttpPort            = 13032
-	ingressTcpPort            = 13041
-	ingressHttpPort           = 13042
-	egressClusterName         = "egress_cluster"
-	ingressClusterName        = "ingress_cluster"
-	egressForwardClusterName  = "egress_forward_cluster"
-	ingressForwardClusterName = "ingress_forward_cluster"
-	dnsCacheConfigName        = "forward_dns_cache_config"
-	egressTcpStatPrefixName   = "egress_tcp"
-	ingressTcpStatPrefixName  = "ingress_tcp"
-	egressHttpStatPrefixName  = "egress_http"
-	ingressHttpStatPrefixName = "ingress_http"
+	AdminPort                 = 9901
+	EgressTcpPort             = 13031
+	EgressHttpPort            = 13032
+	IngressTcpPort            = 13041
+	IngressHttpPort           = 13042
+	EgressClusterName         = "egress_cluster"
+	IngressClusterName        = "ingress_cluster"
+	EgressForwardClusterName  = "egress_forward_cluster"
+	IngressForwardClusterName = "ingress_forward_cluster"
+	DnsCacheConfigName        = "forward_dns_cache_config"
+	EgressTcpStatPrefixName   = "egress_tcp"
+	IngressTcpStatPrefixName  = "ingress_tcp"
+	EgressHttpStatPrefixName  = "egress_http"
+	IngressHttpStatPrefixName = "ingress_http"
 )
 
 // Envoy API constants

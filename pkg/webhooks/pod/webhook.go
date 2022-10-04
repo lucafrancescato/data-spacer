@@ -19,6 +19,7 @@ package pod
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	corev1 "k8s.io/api/core/v1"
@@ -26,6 +27,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"data-space.liqo.io/consts"
 )
 
 type mutator struct {
@@ -65,6 +68,14 @@ func (m *mutator) Handle(ctx context.Context, req admission.Request) admission.R
 }
 
 func mutatePod(pod *corev1.Pod) {
+	injectVolume(pod)
+	injectInit(pod)
+	injectEnvVar(pod)
+	injectSecCtx(pod)
+	injectSidecar(pod)
+}
+
+func injectVolume(pod *corev1.Pod) {
 	volume := corev1.Volume{
 		Name: "envoy-config-volume",
 		VolumeSource: corev1.VolumeSource{
@@ -80,14 +91,26 @@ func mutatePod(pod *corev1.Pod) {
 		},
 	}
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+}
 
+func injectInit(pod *corev1.Pod) {
 	privileged := false
 	initContainer := corev1.Container{
 		Name:    "init",
-		Image:   "nicolaka/netshoot",
-		Command: []string{"zsh", "-c"},
+		Image:   "alpine:3.16",
+		Command: []string{"sh", "-c"},
 		Args: []string{
-			"iptables -t nat -N PROXY_INIT_REDIRECT; iptables -t nat -A PROXY_INIT_REDIRECT -p tcp -j REDIRECT --to-port 13041; iptables -t nat -A PREROUTING -j PROXY_INIT_REDIRECT; iptables -t nat -N PROXY_INIT_OUTPUT; iptables -t nat -A PROXY_INIT_OUTPUT -m owner --uid-owner 1303 -j RETURN; iptables -t nat -A PROXY_INIT_OUTPUT -o lo -j RETURN; iptables -t nat -A PROXY_INIT_OUTPUT -p tcp -j REDIRECT --to-port 13031; iptables -t nat -A OUTPUT -j PROXY_INIT_OUTPUT;",
+			fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s;%s",
+				"apk add --no-cache iptables",
+				"iptables -t nat -N PROXY_INIT_REDIRECT",
+				"iptables -t nat -A PROXY_INIT_REDIRECT -p tcp -j REDIRECT --to-port 13041",
+				"iptables -t nat -A PREROUTING -j PROXY_INIT_REDIRECT",
+				"iptables -t nat -N PROXY_INIT_OUTPUT",
+				"iptables -t nat -A PROXY_INIT_OUTPUT -m owner --uid-owner 1303 -j RETURN",
+				"iptables -t nat -A PROXY_INIT_OUTPUT -o lo -j RETURN",
+				"iptables -t nat -A PROXY_INIT_OUTPUT -p tcp -j REDIRECT --to-port 13031",
+				"iptables -t nat -A OUTPUT -j PROXY_INIT_OUTPUT",
+			),
 		},
 		SecurityContext: &corev1.SecurityContext{
 			Capabilities: &corev1.Capabilities{
@@ -100,7 +123,31 @@ func mutatePod(pod *corev1.Pod) {
 		},
 	}
 	pod.Spec.InitContainers = append(pod.Spec.InitContainers, initContainer)
+}
 
+func injectEnvVar(pod *corev1.Pod) {
+	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env,
+		corev1.EnvVar{
+			Name:  "http_proxy",
+			Value: fmt.Sprintf("%s:%v", consts.LOCALHOST_ADDR, consts.EgressHttpPort),
+		},
+		corev1.EnvVar{
+			Name:  "HTTP_PROXY",
+			Value: fmt.Sprintf("%s:%v", consts.LOCALHOST_ADDR, consts.EgressHttpPort),
+		},
+	)
+}
+
+func injectSecCtx(pod *corev1.Pod) {
+	privileged := false
+	pod.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
+		Privileged:               &privileged,
+		AllowPrivilegeEscalation: &privileged,
+	}
+}
+
+func injectSidecar(pod *corev1.Pod) {
+	privileged := false
 	user := int64(1303)
 	sidecar := corev1.Container{
 		Name:  "proxy",
