@@ -16,33 +16,47 @@ limitations under the License.
 
 package controllers
 
+type DynamicForwardProxyType struct {
+	Type               string `yaml:"@type"`
+	HostRewriteLiteral string `yaml:"host_rewrite_literal"`
+}
+type TypedPerFilterConfig struct {
+	DynamicForwardProxyType DynamicForwardProxyType `yaml:"envoy.filters.http.dynamic_forward_proxy"`
+}
 type Route struct {
 	Cluster string `yaml:"cluster"`
 }
 type Match struct {
 	Prefix string `yaml:"prefix"`
 }
-type HostRoute struct {
-	Name  string `yaml:"name"`
-	Match Match  `yaml:"match"`
-	Route Route  `yaml:"route"`
+type RouteEntry struct {
+	Name                 string               `yaml:"name"`
+	Match                Match                `yaml:"match"`
+	Route                Route                `yaml:"route"`
+	TypedPerFilterConfig TypedPerFilterConfig `yaml:"typed_per_filter_config,omitempty"`
 }
 type VirtualHost struct {
-	Name    string      `yaml:"name"`
-	Domains []string    `yaml:"domains,flow"`
-	Routes  []HostRoute `yaml:"routes"`
+	Name    string   `yaml:"name"`
+	Domains []string `yaml:"domains,flow"`
+	// Order matters: first matching route is used
+	Routes []RouteEntry `yaml:"routes"`
+}
+type DnsCacheConfig struct {
+	Name            string `yaml:"name"`
+	DnsLookupFamily string `yaml:"dns_lookup_family"`
 }
 type RouteConfig struct {
 	Name         string        `yaml:"name"`
 	VirtualHosts []VirtualHost `yaml:"virtual_hosts"`
 }
 type TypedConfig struct {
-	Type        string          `yaml:"@type"`
-	StatPrefix  string          `yaml:"stat_prefix,omitempty"`
-	Cluster     string          `yaml:"cluster,omitempty"`
-	AccessLog   []NameAndConfig `yaml:"access_log,omitempty"`
-	HttpFilters []NameAndConfig `yaml:"http_filters,omitempty"`
-	RouteConfig RouteConfig     `yaml:"route_config,omitempty"`
+	Type           string          `yaml:"@type"`
+	StatPrefix     string          `yaml:"stat_prefix,omitempty"`
+	Cluster        string          `yaml:"cluster,omitempty"`
+	AccessLog      []NameAndConfig `yaml:"access_log,omitempty"`
+	HttpFilters    []NameAndConfig `yaml:"http_filters,omitempty"`
+	RouteConfig    RouteConfig     `yaml:"route_config,omitempty"`
+	DnsCacheConfig DnsCacheConfig  `yaml:"dns_cache_config,omitempty"`
 }
 type NameAndConfig struct {
 	Name        string      `yaml:"name"`
@@ -70,11 +84,12 @@ type OriginalDstLbConfig struct {
 }
 type Cluster struct {
 	Name                string              `yaml:"name"`
-	DnsLookupFamily     string              `yaml:"dns_lookup_family"`
-	Type                string              `yaml:"type"`
+	DnsLookupFamily     string              `yaml:"dns_lookup_family,omitempty"`
+	Type                string              `yaml:"type,omitempty"`
 	LbPolicy            string              `yaml:"lb_policy"`
-	ConnectTimeout      string              `yaml:"connect_timeout"`
-	OriginalDstLbConfig OriginalDstLbConfig `yaml:"original_dst_lb_config"`
+	ConnectTimeout      string              `yaml:"connect_timeout,omitempty"`
+	OriginalDstLbConfig OriginalDstLbConfig `yaml:"original_dst_lb_config,omitempty"`
+	ClusterType         NameAndConfig       `yaml:"cluster_type,omitempty"`
 }
 
 type Admin struct {

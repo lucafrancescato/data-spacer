@@ -250,8 +250,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 		Admin: Admin{
 			Address: Address{
 				SocketAddress: SocketAddress{
-					Address:   "0.0.0.0",
-					PortValue: 9902,
+					Address:   LOCALHOST_ADDR,
+					PortValue: adminPort,
 				},
 			},
 		},
@@ -263,8 +263,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					Name: "egress_tcp_listener",
 					Address: Address{
 						SocketAddress: SocketAddress{
-							Address:   "127.0.0.1",
-							PortValue: 13031,
+							Address:   LOCALHOST_ADDR,
+							PortValue: egressTcpPort,
 						},
 					},
 					FilterChains: []FilterChain{
@@ -274,8 +274,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 									Name: TcpProxyTypeName,
 									TypedConfig: TypedConfig{
 										Type:       TcpProxyTypeUrl,
-										StatPrefix: "egress_tcp",
-										Cluster:    "egress_cluster",
+										StatPrefix: egressTcpStatPrefixName,
+										Cluster:    egressClusterName,
 										// Log access to /dev/stdout
 										AccessLog: []NameAndConfig{{
 											Name: AccessLogTypeName,
@@ -302,8 +302,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					Name: "ingress_tcp_listener",
 					Address: Address{
 						SocketAddress: SocketAddress{
-							Address:   "0.0.0.0",
-							PortValue: 13041,
+							Address:   ANY_ADDR,
+							PortValue: ingressTcpPort,
 						},
 					},
 					FilterChains: []FilterChain{
@@ -313,8 +313,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 									Name: TcpProxyTypeName,
 									TypedConfig: TypedConfig{
 										Type:       TcpProxyTypeUrl,
-										StatPrefix: "ingress_tcp",
-										Cluster:    "ingress_cluster",
+										StatPrefix: ingressTcpStatPrefixName,
+										Cluster:    ingressClusterName,
 										// Log access to /dev/stdout
 										AccessLog: []NameAndConfig{{
 											Name: AccessLogTypeName,
@@ -341,8 +341,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					Name: "egress_http_listener",
 					Address: Address{
 						SocketAddress: SocketAddress{
-							Address:   "127.0.0.1",
-							PortValue: 13032,
+							Address:   LOCALHOST_ADDR,
+							PortValue: egressHttpPort,
 						},
 					},
 					FilterChains: []FilterChain{
@@ -352,8 +352,20 @@ func forgeEnvoyConfig() *EnvoyConfig {
 									Name: HttpConnectionManagerTypeName,
 									TypedConfig: TypedConfig{
 										Type:       HttpConnectionManagerTypeUrl,
-										StatPrefix: "egress_http",
+										StatPrefix: egressHttpStatPrefixName,
 										HttpFilters: []NameAndConfig{
+											// Forward
+											{
+												Name: DynamicForwardProxyFilterTypeName,
+												TypedConfig: TypedConfig{
+													Type: DynamicForwardProxyFilterTypeUrl,
+													DnsCacheConfig: DnsCacheConfig{
+														Name:            dnsCacheConfigName,
+														DnsLookupFamily: Ipv4Only,
+													},
+												},
+											},
+											// Router
 											{
 												Name: RouterTypeName,
 												TypedConfig: TypedConfig{
@@ -362,19 +374,34 @@ func forgeEnvoyConfig() *EnvoyConfig {
 											},
 										},
 										RouteConfig: RouteConfig{
-											Name: "egress_host",
+											Name: "egress_route_config",
 											VirtualHosts: []VirtualHost{
 												{
-													Name:    "egress_host",
+													Name:    "egress_forward_host",
 													Domains: []string{"*"},
-													Routes: []HostRoute{
+													Routes: []RouteEntry{
 														{
-															Name: "egress_route",
+															Name: "egress_forward_rewrite_route",
+															Match: Match{
+																Prefix: "/host-rewrite",
+															},
+															Route: Route{
+																Cluster: egressForwardClusterName,
+															},
+															TypedPerFilterConfig: TypedPerFilterConfig{
+																DynamicForwardProxyType: DynamicForwardProxyType{
+																	Type:               DynamicForwardProxyRouteTypeUrl,
+																	HostRewriteLiteral: "dst-svc.dst-space.svc.cluster.local",
+																},
+															},
+														},
+														{
+															Name: "egress_forward_route",
 															Match: Match{
 																Prefix: "/",
 															},
 															Route: Route{
-																Cluster: "egress_cluster",
+																Cluster: egressForwardClusterName,
 															},
 														},
 													},
@@ -399,8 +426,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 					Name: "ingress_http_listener",
 					Address: Address{
 						SocketAddress: SocketAddress{
-							Address:   "0.0.0.0",
-							PortValue: 13042,
+							Address:   ANY_ADDR,
+							PortValue: ingressHttpPort,
 						},
 					},
 					FilterChains: []FilterChain{
@@ -410,8 +437,20 @@ func forgeEnvoyConfig() *EnvoyConfig {
 									Name: HttpConnectionManagerTypeName,
 									TypedConfig: TypedConfig{
 										Type:       HttpConnectionManagerTypeUrl,
-										StatPrefix: "ingress_http",
+										StatPrefix: ingressHttpStatPrefixName,
 										HttpFilters: []NameAndConfig{
+											// Forward
+											{
+												Name: DynamicForwardProxyFilterTypeName,
+												TypedConfig: TypedConfig{
+													Type: DynamicForwardProxyFilterTypeUrl,
+													DnsCacheConfig: DnsCacheConfig{
+														Name:            dnsCacheConfigName,
+														DnsLookupFamily: Ipv4Only,
+													},
+												},
+											},
+											// Router
 											{
 												Name: RouterTypeName,
 												TypedConfig: TypedConfig{
@@ -420,19 +459,19 @@ func forgeEnvoyConfig() *EnvoyConfig {
 											},
 										},
 										RouteConfig: RouteConfig{
-											Name: "ingress_host",
+											Name: "ingress_route_config",
 											VirtualHosts: []VirtualHost{
 												{
-													Name:    "ingress_host",
+													Name:    "ingress_forward_host",
 													Domains: []string{"*"},
-													Routes: []HostRoute{
+													Routes: []RouteEntry{
 														{
-															Name: "ingress_route",
+															Name: "ingress_forward_route",
 															Match: Match{
 																Prefix: "/",
 															},
 															Route: Route{
-																Cluster: "ingress_cluster",
+																Cluster: ingressForwardClusterName,
 															},
 														},
 													},
@@ -456,8 +495,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 			Clusters: []Cluster{
 				// Egress cluster
 				{
-					Name:            "egress_cluster",
-					DnsLookupFamily: IpV4OnlyDnsLookupFamily,
+					Name:            egressClusterName,
+					DnsLookupFamily: Ipv4Only,
 					Type:            OriginalDstType,
 					LbPolicy:        OriginalDstLbPolicy,
 					ConnectTimeout:  "6s",
@@ -467,13 +506,45 @@ func forgeEnvoyConfig() *EnvoyConfig {
 				},
 				// Ingress cluster
 				{
-					Name:            "ingress_cluster",
-					DnsLookupFamily: IpV4OnlyDnsLookupFamily,
+					Name:            ingressClusterName,
+					DnsLookupFamily: Ipv4Only,
 					Type:            OriginalDstType,
 					LbPolicy:        OriginalDstLbPolicy,
 					ConnectTimeout:  "6s",
 					OriginalDstLbConfig: OriginalDstLbConfig{
 						UseHttpHeader: true,
+					},
+				},
+				// Egress forward cluster
+				{
+					Name:           egressForwardClusterName,
+					LbPolicy:       OriginalDstLbPolicy,
+					ConnectTimeout: "6s",
+					ClusterType: NameAndConfig{
+						Name: DynamicForwardProxyClusterTypeName,
+						TypedConfig: TypedConfig{
+							Type: DynamicForwardProxyClusterTypeUrl,
+							DnsCacheConfig: DnsCacheConfig{
+								Name:            dnsCacheConfigName,
+								DnsLookupFamily: Ipv4Only,
+							},
+						},
+					},
+				},
+				// Ingress forward cluster
+				{
+					Name:           ingressForwardClusterName,
+					LbPolicy:       OriginalDstLbPolicy,
+					ConnectTimeout: "6s",
+					ClusterType: NameAndConfig{
+						Name: DynamicForwardProxyClusterTypeName,
+						TypedConfig: TypedConfig{
+							Type: DynamicForwardProxyClusterTypeUrl,
+							DnsCacheConfig: DnsCacheConfig{
+								Name:            dnsCacheConfigName,
+								DnsLookupFamily: Ipv4Only,
+							},
+						},
 					},
 				},
 			},
