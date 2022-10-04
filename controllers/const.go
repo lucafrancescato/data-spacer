@@ -16,16 +16,22 @@ limitations under the License.
 
 package controllers
 
+// Network constants
+const (
+	ANY_ADDR       = "0.0.0.0"
+	LOCALHOST_ADDR = "127.0.0.1"
+)
+
 // App constants
 const (
 	dataSpaceLabel            = "data-space/enabled"
 	dataSpaceDestinationLabel = "data-space-dest/enabled"
 	networkPolicyName         = "data-space-network-policy"
 	configMapName             = "envoy-config"
+)
 
-	ANY_ADDR       = "0.0.0.0"
-	LOCALHOST_ADDR = "127.0.0.1"
-
+// Envoy config constants
+const (
 	adminPort                 = 9901
 	egressTcpPort             = 13031
 	egressHttpPort            = 13032
@@ -42,7 +48,7 @@ const (
 	ingressHttpStatPrefixName = "ingress_http"
 )
 
-// Envoy constants
+// Envoy API constants
 const (
 	OriginalDstListenerFilterTypeName  = "envoy.filters.listener.original_dst"
 	OriginalDstListenerFilterTypeUrl   = "type.googleapis.com/envoy.extensions.filters.listener.original_dst.v3.OriginalDst"
