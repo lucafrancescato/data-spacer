@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"data-space.liqo.io/common"
 	"data-space.liqo.io/consts"
 )
 
@@ -71,6 +72,7 @@ func mutatePod(pod *corev1.Pod) {
 	injectVolume(pod)
 	injectInit(pod)
 	injectEnvVar(pod)
+	common.InjectPodLabel(pod, consts.MutatedPodLabel, "true")
 	injectSecCtx(pod)
 	injectSidecar(pod)
 }
@@ -100,16 +102,16 @@ func injectInit(pod *corev1.Pod) {
 		Image:   "alpine:3.16",
 		Command: []string{"sh", "-c"},
 		Args: []string{
-			fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s;%s",
-				"apk add --no-cache iptables",
-				"iptables -t nat -N PROXY_INIT_REDIRECT",
-				"iptables -t nat -A PROXY_INIT_REDIRECT -p tcp -j REDIRECT --to-port 13041",
-				"iptables -t nat -A PREROUTING -j PROXY_INIT_REDIRECT",
-				"iptables -t nat -N PROXY_INIT_OUTPUT",
-				"iptables -t nat -A PROXY_INIT_OUTPUT -m owner --uid-owner 1303 -j RETURN",
-				"iptables -t nat -A PROXY_INIT_OUTPUT -o lo -j RETURN",
-				"iptables -t nat -A PROXY_INIT_OUTPUT -p tcp -j REDIRECT --to-port 13031",
-				"iptables -t nat -A OUTPUT -j PROXY_INIT_OUTPUT",
+			fmt.Sprint(
+				"apk add --no-cache iptables;",
+				"iptables -t nat -N PROXY_INIT_REDIRECT;",
+				"iptables -t nat -A PROXY_INIT_REDIRECT -p tcp -j REDIRECT --to-port 13041;",
+				"iptables -t nat -A PREROUTING -j PROXY_INIT_REDIRECT;",
+				"iptables -t nat -N PROXY_INIT_OUTPUT;",
+				"iptables -t nat -A PROXY_INIT_OUTPUT -m owner --uid-owner 1303 -j RETURN;",
+				"iptables -t nat -A PROXY_INIT_OUTPUT -o lo -j RETURN;",
+				"iptables -t nat -A PROXY_INIT_OUTPUT -p tcp -j REDIRECT --to-port 13031;",
+				"iptables -t nat -A OUTPUT -j PROXY_INIT_OUTPUT;",
 			),
 		},
 		SecurityContext: &corev1.SecurityContext{

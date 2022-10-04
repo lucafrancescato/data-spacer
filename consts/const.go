@@ -24,10 +24,10 @@ const (
 
 // App constants
 const (
-	DataSpaceLabel            = "data-space/enabled"
-	DataSpaceDestinationLabel = "data-space-dest/enabled"
-	NetworkPolicyName         = "data-space-network-policy"
-	ConfigMapName             = "envoy-config"
+	DataSpaceLabel    = "data-space/enabled"
+	MutatedPodLabel   = "data-space/mutated"
+	NetworkPolicyName = "data-space-network-policy"
+	ConfigMapName     = "envoy-config"
 )
 
 // Envoy config constants
