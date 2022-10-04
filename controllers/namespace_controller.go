@@ -137,7 +137,9 @@ func (r *NamespaceReconciler) deleteNetworkPolicy(ctx context.Context, nsName ty
 		return err
 	}
 
-	r.Client.Delete(ctx, &networkPolicy)
+	if err := r.Client.Delete(ctx, &networkPolicy); err != nil {
+		klog.Errorf("Error while deleting NetworkPolicy %q in namespace %q", consts.NetworkPolicyName, nsName.Namespace)
+	}
 	klog.Infof("Deleted NetworkPolicy %q in namespace %q", consts.NetworkPolicyName, nsName.Namespace)
 	return nil
 }
@@ -154,7 +156,9 @@ func (r *NamespaceReconciler) deleteConfigMap(ctx context.Context, nsName types.
 		return err
 	}
 
-	r.Client.Delete(ctx, &configMap)
+	if err := r.Client.Delete(ctx, &configMap); err != nil {
+		klog.Errorf("Error while deleting ConfigMap %q in namespace %q", consts.ConfigMapName, nsName.Namespace)
+	}
 	klog.Infof("Deleted ConfigMap %q in namespace %q", consts.ConfigMapName, nsName.Namespace)
 	return nil
 }
@@ -204,24 +208,42 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 				netv1.PolicyTypeEgress,
 			},
 			Ingress: []netv1.NetworkPolicyIngressRule{{
-				From: []netv1.NetworkPolicyPeer{{
-					NamespaceSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							consts.DataSpaceLabel:            "true", // For current namespace
-							consts.DataSpaceDestinationLabel: "true", // For other namespaces
+				From: []netv1.NetworkPolicyPeer{
+					// OR-ed
+					{
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								consts.DataSpaceLabel: "true",
+							},
 						},
 					},
-				}},
+					{
+						// For pods in the NetworkPolicy's namespace
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								consts.DataSpaceLabel: "true",
+							},
+						},
+					}},
 			}},
 			Egress: []netv1.NetworkPolicyEgressRule{{
-				To: []netv1.NetworkPolicyPeer{{
-					NamespaceSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							consts.DataSpaceLabel:            "true", // For current namespace
-							consts.DataSpaceDestinationLabel: "true", // For other namespaces
+				To: []netv1.NetworkPolicyPeer{
+					// OR-ed
+					{
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								consts.DataSpaceLabel: "true",
+							},
 						},
 					},
-				}},
+					{
+						// For pods in the NetworkPolicy's namespace
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								consts.DataSpaceLabel: "true",
+							},
+						},
+					}},
 			}},
 		},
 	}
