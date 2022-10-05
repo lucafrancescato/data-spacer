@@ -33,12 +33,13 @@ import (
 )
 
 type mutator struct {
-	client  client.Client
-	decoder *admission.Decoder
+	client    client.Client
+	decoder   *admission.Decoder
+	initImage string
 }
 
-func New(cl client.Client) *webhook.Admission {
-	return &webhook.Admission{Handler: &mutator{client: cl}}
+func New(cl client.Client, initImage string) *webhook.Admission {
+	return &webhook.Admission{Handler: &mutator{client: cl, initImage: initImage}}
 }
 
 // InjectDecoder injects the decoder - this method is used by controller runtime.
@@ -57,7 +58,7 @@ func (m *mutator) Handle(ctx context.Context, req admission.Request) admission.R
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	mutatePod(&pod)
+	m.mutatePod(&pod)
 
 	marshaledPod, err := json.Marshal(pod)
 	if err != nil {
@@ -68,12 +69,12 @@ func (m *mutator) Handle(ctx context.Context, req admission.Request) admission.R
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
 }
 
-func mutatePod(pod *corev1.Pod) {
+func (m *mutator) mutatePod(pod *corev1.Pod) {
 	injectVolume(pod)
-	injectInit(pod)
-	injectEnvVar(pod)
-	common.InjectPodLabel(pod, consts.MutatedPodLabel, "true")
-	injectSecCtx(pod)
+	m.injectInit(pod)
+	common.InjectPodLabel(pod, consts.DataSpaceLabel, "true")
+	injectEnvVars(pod)
+	injectSecCtxs(pod)
 	injectSidecar(pod)
 }
 
@@ -95,15 +96,15 @@ func injectVolume(pod *corev1.Pod) {
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
 }
 
-func injectInit(pod *corev1.Pod) {
+func (m *mutator) injectInit(pod *corev1.Pod) {
 	privileged := false
 	initContainer := corev1.Container{
-		Name:    "init",
-		Image:   "alpine:3.16",
-		Command: []string{"sh", "-c"},
+		Name:            "init",
+		Image:           m.initImage,
+		ImagePullPolicy: corev1.PullIfNotPresent,
+		Command:         []string{"sh", "-c"},
 		Args: []string{
 			fmt.Sprint(
-				"apk add --no-cache iptables;",
 				"iptables -t nat -N PROXY_INIT_REDIRECT;",
 				"iptables -t nat -A PROXY_INIT_REDIRECT -p tcp -j REDIRECT --to-port 13041;",
 				"iptables -t nat -A PREROUTING -j PROXY_INIT_REDIRECT;",
@@ -124,27 +125,31 @@ func injectInit(pod *corev1.Pod) {
 			AllowPrivilegeEscalation: &privileged,
 		},
 	}
-	pod.Spec.InitContainers = append(pod.Spec.InitContainers, initContainer)
+	pod.Spec.InitContainers = append([]corev1.Container{initContainer}, pod.Spec.InitContainers...)
 }
 
-func injectEnvVar(pod *corev1.Pod) {
-	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env,
-		corev1.EnvVar{
-			Name:  "http_proxy",
-			Value: fmt.Sprintf("%s:%v", consts.LOCALHOST_ADDR, consts.EgressHttpPort),
-		},
-		corev1.EnvVar{
-			Name:  "HTTP_PROXY",
-			Value: fmt.Sprintf("%s:%v", consts.LOCALHOST_ADDR, consts.EgressHttpPort),
-		},
-	)
+func injectEnvVars(pod *corev1.Pod) {
+	for i := range pod.Spec.Containers {
+		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env,
+			corev1.EnvVar{
+				Name:  "http_proxy",
+				Value: fmt.Sprintf("%s:%v", consts.LOCALHOST_ADDR, consts.EgressHttpPort),
+			},
+			corev1.EnvVar{
+				Name:  "HTTP_PROXY",
+				Value: fmt.Sprintf("%s:%v", consts.LOCALHOST_ADDR, consts.EgressHttpPort),
+			},
+		)
+	}
 }
 
-func injectSecCtx(pod *corev1.Pod) {
+func injectSecCtxs(pod *corev1.Pod) {
 	privileged := false
-	pod.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
-		Privileged:               &privileged,
-		AllowPrivilegeEscalation: &privileged,
+	for i := range pod.Spec.Containers {
+		pod.Spec.Containers[i].SecurityContext = &corev1.SecurityContext{
+			Privileged:               &privileged,
+			AllowPrivilegeEscalation: &privileged,
+		}
 	}
 }
 
