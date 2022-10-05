@@ -26,7 +26,5 @@ func InjectPodLabel(pod *corev1.Pod, key, value string) {
 		labels = make(map[string]string)
 		pod.SetLabels(labels)
 	}
-	if _, ok := pod.ObjectMeta.Labels[key]; !ok {
-		pod.ObjectMeta.Labels[key] = value
-	}
+	pod.ObjectMeta.Labels[key] = value
 }
