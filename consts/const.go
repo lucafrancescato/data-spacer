@@ -29,6 +29,10 @@ const (
 	DataSpaceApplyWebhookLabel   = "data-space/apply-webhook"
 	DataSpaceNetpolAllowLabel    = "data-space/netpol-allow"
 
+	K8sAppLabel = "k8s-app"
+	KUBE_SYSTEM = "kube-system"
+	KUBE_DNS    = "kube-dns"
+
 	NetworkPolicyName = "data-space-network-policy"
 	ConfigMapName     = "data-space-envoy-config"
 )

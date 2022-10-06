@@ -228,7 +228,8 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 								consts.DataSpaceNetpolAllowLabel: "true",
 							},
 						},
-					}},
+					},
+				},
 			}},
 			Egress: []netv1.NetworkPolicyEgressRule{{
 				To: []netv1.NetworkPolicyPeer{
@@ -248,7 +249,22 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 								consts.DataSpaceNetpolAllowLabel: "true",
 							},
 						},
-					}},
+					},
+					{
+						// AND-ed
+						// Allow DNS queries
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								corev1.LabelMetadataName: consts.KUBE_SYSTEM,
+							},
+						},
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								consts.K8sAppLabel: consts.KUBE_DNS,
+							},
+						},
+					},
+				},
 			}},
 		},
 	}
