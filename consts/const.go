@@ -24,10 +24,13 @@ const (
 
 // App constants
 const (
-	DataSpaceNetpolLabel      = "data-space/netpol"
-	DataSpaceNetpolAllowLabel = "data-space/netpol-allow"
-	NetworkPolicyName         = "data-space-network-policy"
-	ConfigMapName             = "data-space-envoy-config"
+	DataSpaceApplyNetpolLabel    = "data-space/apply-netpol"
+	DataSpaceApplyReconcileLabel = "data-space/apply-reconcile"
+	DataSpaceApplyWebhookLabel   = "data-space/apply-webhook"
+	DataSpaceNetpolAllowLabel    = "data-space/netpol-allow"
+
+	NetworkPolicyName = "data-space-network-policy"
+	ConfigMapName     = "data-space-envoy-config"
 )
 
 // Envoy config constants

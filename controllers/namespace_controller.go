@@ -28,8 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"data-space.liqo.io/consts"
 )
@@ -93,31 +95,35 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	if v, ok := namespace.Labels[consts.DataSpaceNetpolLabel]; !ok || v != "true" {
-		klog.Infof("Namespace %q does not contain label %q: trying to delete NetworkPolicy %q and ConfigMap %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceNetpolLabel, "true"), npNsName, cmNsName)
-		// Delete relevant NetworkPolicy and ConfigMap if found
+	if v, ok := namespace.Labels[consts.DataSpaceApplyNetpolLabel]; !ok || v != "true" {
+		klog.Infof("Namespace %q does not contain label %q: trying to delete NetworkPolicy %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceApplyNetpolLabel, "true"), npNsName)
+		// Delete relevant NetworkPolicy if found
 		if err := r.deleteNetworkPolicy(ctx, npNsName); err != nil {
 			return ctrl.Result{}, err
 		}
+	} else {
+		// Create NetworkPolicy
+		networkPolicy := forgeNetworkPolicy(nsName.Name)
+		if err := r.createNetworkPolicy(ctx, nsName.Name, networkPolicy); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	if v, ok := namespace.Labels[consts.DataSpaceApplyWebhookLabel]; !ok || v != "true" {
+		// Delete relevant ConfigMap if found
+		klog.Infof("Namespace %q does not contain label %q: trying to delete ConfigMap %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceApplyWebhookLabel, "true"), cmNsName)
 		if err := r.deleteConfigMap(ctx, cmNsName); err != nil {
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, nil
-	}
-
-	// Create NetworkPolicy
-	networkPolicy := forgeNetworkPolicy(nsName.Name)
-	if err := r.createNetworkPolicy(ctx, nsName.Name, networkPolicy); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Create ConfigMap
-	configMap, err := forgeConfigMap(nsName.Name)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	if err := r.createConfigMap(ctx, nsName.Name, configMap); err != nil {
-		return ctrl.Result{}, err
+	} else {
+		// Create ConfigMap
+		configMap, err := forgeConfigMap(nsName.Name)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if err := r.createConfigMap(ctx, nsName.Name, configMap); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
@@ -577,7 +583,17 @@ func forgeEnvoyConfig() *EnvoyConfig {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *NamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	networkPolicyPredicate, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			consts.DataSpaceApplyReconcileLabel: "true",
+		},
+	})
+	if err != nil {
+		klog.Error(err)
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&corev1.Namespace{}).
+		For(&corev1.Namespace{}, builder.WithPredicates(networkPolicyPredicate)).
 		Complete(r)
 }

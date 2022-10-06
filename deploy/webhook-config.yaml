@@ -10,9 +10,9 @@ webhooks:
     admissionReviewVersions: ["v1", "v1beta1"]
     namespaceSelector:
       matchExpressions:
-        - key: environment
+        - key: data-space/apply-webhook
           operator: In
-          values: ["data-space"]
+          values: ["true"]
     rules:
       - apiGroups: [""]
         apiVersions: ["v1"]
