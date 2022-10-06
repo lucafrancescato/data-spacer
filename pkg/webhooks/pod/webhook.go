@@ -72,7 +72,7 @@ func (m *mutator) Handle(ctx context.Context, req admission.Request) admission.R
 func (m *mutator) mutatePod(pod *corev1.Pod) {
 	injectVolume(pod)
 	m.injectInit(pod)
-	common.InjectPodLabel(pod, consts.DataSpaceLabel, "true")
+	common.InjectPodLabel(pod, consts.DataSpaceNetpolAllowLabel, "true")
 	injectEnvVars(pod)
 	injectSecCtxs(pod)
 	injectSidecar(pod)
@@ -84,7 +84,7 @@ func injectVolume(pod *corev1.Pod) {
 		VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "envoy-config",
+					Name: consts.ConfigMapName,
 				},
 				Items: []corev1.KeyToPath{{
 					Key:  "keys",

@@ -196,10 +196,9 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 			Namespace: namespaceName,
 		},
 		Spec: netv1.NetworkPolicySpec{
+			// For matching pods in the NetworkPolicy's namespace
 			PodSelector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					consts.DataSpaceLabel: "true",
-				},
+				// Empty: match all
 			},
 			PolicyTypes: []netv1.PolicyType{
 				netv1.PolicyTypeIngress,
@@ -209,17 +208,18 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 				From: []netv1.NetworkPolicyPeer{
 					// OR-ed
 					{
+						// For pods in any matching namespaces
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								consts.DataSpaceLabel: "true",
+								consts.DataSpaceNetpolAllowLabel: "true",
 							},
 						},
 					},
 					{
-						// For pods in the NetworkPolicy's namespace
+						// For matching pods in the NetworkPolicy's namespace
 						PodSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								consts.DataSpaceLabel: "true",
+								consts.DataSpaceNetpolAllowLabel: "true",
 							},
 						},
 					}},
@@ -228,17 +228,18 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 				To: []netv1.NetworkPolicyPeer{
 					// OR-ed
 					{
+						// For pods in any matching namespaces
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								consts.DataSpaceLabel: "true",
+								consts.DataSpaceNetpolAllowLabel: "true",
 							},
 						},
 					},
 					{
-						// For pods in the NetworkPolicy's namespace
+						// For matching pods in the NetworkPolicy's namespace
 						PodSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								consts.DataSpaceLabel: "true",
+								consts.DataSpaceNetpolAllowLabel: "true",
 							},
 						},
 					}},
