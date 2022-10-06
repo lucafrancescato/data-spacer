@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
@@ -74,7 +75,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err := r.Get(ctx, nsName, &namespace); err != nil {
 		err = client.IgnoreNotFound(err)
 		if err == nil {
-			klog.Infof("Skipping not found Namespace %q", nsName.Name)
+			klog.Infof("Namespace %q not found: trying to delete NetworkPolicy %q and ConfigMap %q", nsName.Name, npNsName, cmNsName)
 			// Delete relevant NetworkPolicy and ConfigMap if found
 			if err := r.deleteNetworkPolicy(ctx, npNsName); err != nil {
 				return ctrl.Result{}, err
@@ -92,11 +93,8 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	if v, ok := namespace.Labels[consts.DataSpaceLabel]; !ok {
-		klog.Infof("Skipping Namespace %q as it does not contain the %q label", nsName.Name, consts.DataSpaceLabel)
-		return ctrl.Result{}, nil
-	} else if v != "true" {
-		klog.Infof("Skipping Namespace %q as it is not enabled for data spaces", nsName.Name)
+	if v, ok := namespace.Labels[consts.DataSpaceNetpolLabel]; !ok || v != "true" {
+		klog.Infof("Namespace %q does not contain label %q: trying to delete NetworkPolicy %q and ConfigMap %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceNetpolLabel, "true"), npNsName, cmNsName)
 		// Delete relevant NetworkPolicy and ConfigMap if found
 		if err := r.deleteNetworkPolicy(ctx, npNsName); err != nil {
 			return ctrl.Result{}, err
