@@ -25,3 +25,5 @@ Dockerfile.cross
 *.swo
 *~
 .vscode
+
+build/app/node_modules
