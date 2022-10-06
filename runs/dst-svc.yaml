@@ -10,29 +10,29 @@ spec:
       protocol: TCP
       targetPort: http
   selector:
-    app: nginx
+    app: webserver
   type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx
+  name: webserver
   namespace: dst-space
   labels:
-    app: nginx
+    app: webserver
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: webserver
   template:
     metadata:
       labels:
-        app: nginx
+        app: webserver
     spec:
       containers:
-        - name: nginx
-          image: nginxdemos/hello
+        - name: webserver
+          image: lucafrancescato/webserver:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

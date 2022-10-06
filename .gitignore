@@ -27,3 +27,4 @@ Dockerfile.cross
 .vscode
 
 build/app/node_modules
+build/webserver/node_modules
