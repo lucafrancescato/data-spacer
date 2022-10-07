@@ -63,11 +63,12 @@ func main() {
 	flag.Parse()
 
 	if initImage == "" {
-		klog.Fatalf("Missing %q flag", "init-image")
+		klog.Fatalf("Missing %q flag: provide a value", "init-image")
 	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	// Create new manager
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -92,6 +93,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set up controllers
 	if err = (&controllers.NamespaceReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -113,6 +115,7 @@ func main() {
 	// Register webhooks
 	mgr.GetWebhookServer().Register("/mutate/pod", podwebhook.New(mgr.GetClient(), initImage))
 
+	// Start manager
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")

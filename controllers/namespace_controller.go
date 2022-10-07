@@ -64,10 +64,12 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	nsName := req.NamespacedName
 	klog.Infof("Reconcile Namespace %q", nsName.Name)
 
+	// Network policy namespaced name
 	npNsName := types.NamespacedName{
 		Namespace: nsName.Name,
 		Name:      consts.NetworkPolicyName,
 	}
+	// Config map namespaced name
 	cmNsName := types.NamespacedName{
 		Namespace: nsName.Name,
 		Name:      consts.ConfigMapName,
@@ -89,34 +91,36 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	// Intercept if the object is under deletion
+	// Intercept if the object is under deletion and return no errors
 	if !namespace.ObjectMeta.DeletionTimestamp.IsZero() {
 		klog.Infof("Namespace %q is under deletion. Relevant resources are going to be deleted as well.", nsName.Name)
 		return ctrl.Result{}, nil
 	}
 
+	// Check the presence and value of the specificed label
 	if v, ok := namespace.Labels[consts.DataSpaceApplyNetpolLabel]; !ok || v != "true" {
+		// Namespace does not contain the label: delete relevant NetworkPolicy if found
 		klog.Infof("Namespace %q does not contain label %q: trying to delete NetworkPolicy %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceApplyNetpolLabel, "true"), npNsName)
-		// Delete relevant NetworkPolicy if found
 		if err := r.deleteNetworkPolicy(ctx, npNsName); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
-		// Create NetworkPolicy
+		// Namespace contains the label: create NetworkPolicy if not found
 		networkPolicy := forgeNetworkPolicy(nsName.Name)
 		if err := r.createNetworkPolicy(ctx, nsName.Name, networkPolicy); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
 
+	// Check the presence and value of the specificed label
 	if v, ok := namespace.Labels[consts.DataSpaceApplyWebhookLabel]; !ok || v != "true" {
-		// Delete relevant ConfigMap if found
+		// Namespace does not contain the label: delete relevant ConfigMap if found
 		klog.Infof("Namespace %q does not contain label %q: trying to delete ConfigMap %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceApplyWebhookLabel, "true"), cmNsName)
 		if err := r.deleteConfigMap(ctx, cmNsName); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
-		// Create ConfigMap
+		// Namespace contains the label: create ConfigMap if not found
 		configMap, err := forgeConfigMap(nsName.Name)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -129,6 +133,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
+// deleteNetworkPolicy deletes the NetworkPolicy resource in the reconciled namespace
 func (r *NamespaceReconciler) deleteNetworkPolicy(ctx context.Context, nsName types.NamespacedName) error {
 	var networkPolicy netv1.NetworkPolicy
 	if err := r.Client.Get(ctx, nsName, &networkPolicy); err != nil {
@@ -148,6 +153,7 @@ func (r *NamespaceReconciler) deleteNetworkPolicy(ctx context.Context, nsName ty
 	return nil
 }
 
+// deleteConfigMap deletes the ConfigMap resource in the reconciled namespace
 func (r *NamespaceReconciler) deleteConfigMap(ctx context.Context, nsName types.NamespacedName) error {
 	var configMap corev1.ConfigMap
 	if err := r.Client.Get(ctx, nsName, &configMap); err != nil {
@@ -167,6 +173,7 @@ func (r *NamespaceReconciler) deleteConfigMap(ctx context.Context, nsName types.
 	return nil
 }
 
+// createNetworkPolicy creates a NetworkPolicy resource in the reconciled namespace
 func (r *NamespaceReconciler) createNetworkPolicy(ctx context.Context, namespaceName string, networkPolicy *netv1.NetworkPolicy) error {
 	if err := r.Client.Create(ctx, networkPolicy); err != nil {
 		err = client.IgnoreAlreadyExists(err)
@@ -181,6 +188,7 @@ func (r *NamespaceReconciler) createNetworkPolicy(ctx context.Context, namespace
 	return nil
 }
 
+// createConfigMap creates a ConfigMap resource in the reconciled namespace
 func (r *NamespaceReconciler) createConfigMap(ctx context.Context, namespaceName string, configMap *corev1.ConfigMap) error {
 	if err := r.Client.Create(ctx, configMap); err != nil {
 		err = client.IgnoreAlreadyExists(err)
@@ -195,6 +203,7 @@ func (r *NamespaceReconciler) createConfigMap(ctx context.Context, namespaceName
 	return nil
 }
 
+// forgeNetworkPolicy builds a NetworkPolicy object
 func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 	return &netv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -214,7 +223,7 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 				From: []netv1.NetworkPolicyPeer{
 					// OR-ed
 					{
-						// For pods in any matching namespaces
+						// For pods in matching namespaces
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								consts.DataSpaceNetpolAllowLabel: "true",
@@ -233,9 +242,9 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 			}},
 			Egress: []netv1.NetworkPolicyEgressRule{{
 				To: []netv1.NetworkPolicyPeer{
-					// OR-ed
+					// OR-ed selectors
 					{
-						// For pods in any matching namespaces
+						// For pods in matching namespaces
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								consts.DataSpaceNetpolAllowLabel: "true",
@@ -251,8 +260,8 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 						},
 					},
 					{
-						// AND-ed
-						// Allow DNS queries
+						// AND-ed selectors
+						// For matching pods in matching namespaces (to allow for DNS queries)
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								corev1.LabelMetadataName: consts.KUBE_SYSTEM,
@@ -270,9 +279,11 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 	}
 }
 
+// forgeConfigMap builds a ConfigMap object
 func forgeConfigMap(namespaceName string) (*corev1.ConfigMap, error) {
 	envoyConfig := forgeEnvoyConfig()
 
+	// Encode object into yaml
 	marshaledEnvoyConfig, err := yaml.Marshal(envoyConfig)
 	if err != nil {
 		klog.Fatal("Could not marshal yaml, error: %v", err)
@@ -290,6 +301,7 @@ func forgeConfigMap(namespaceName string) (*corev1.ConfigMap, error) {
 	}, nil
 }
 
+// forgeEnvoyConfig builds an EnvoyConfig object
 func forgeEnvoyConfig() *EnvoyConfig {
 	return &EnvoyConfig{
 		Admin: Admin{
@@ -599,7 +611,8 @@ func forgeEnvoyConfig() *EnvoyConfig {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *NamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	networkPolicyPredicate, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
+	// namespacePredicate selects those namespaces matching the provided label
+	namespacePredicate, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			consts.DataSpaceApplyReconcileLabel: "true",
 		},
@@ -610,6 +623,6 @@ func (r *NamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&corev1.Namespace{}, builder.WithPredicates(networkPolicyPredicate)).
+		For(&corev1.Namespace{}, builder.WithPredicates(namespacePredicate)).
 		Complete(r)
 }

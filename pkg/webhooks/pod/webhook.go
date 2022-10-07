@@ -69,6 +69,7 @@ func (m *mutator) Handle(ctx context.Context, req admission.Request) admission.R
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
 }
 
+// mutatePod mutates the pod
 func (m *mutator) mutatePod(pod *corev1.Pod) {
 	injectVolume(pod)
 	m.injectInit(pod)
@@ -78,6 +79,8 @@ func (m *mutator) mutatePod(pod *corev1.Pod) {
 	injectSidecar(pod)
 }
 
+// injectVolume adds a volume associated to a config map
+// that configures Envoy
 func injectVolume(pod *corev1.Pod) {
 	volume := corev1.Volume{
 		Name: "envoy-config-volume",
@@ -96,6 +99,8 @@ func injectVolume(pod *corev1.Pod) {
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
 }
 
+// injectInit adds an init container as the first one to be executed
+// to set iptables rules for pod's egress and ingress traffic
 func (m *mutator) injectInit(pod *corev1.Pod) {
 	privileged := false
 	initContainer := corev1.Container{
@@ -105,14 +110,25 @@ func (m *mutator) injectInit(pod *corev1.Pod) {
 		Command:         []string{"sh", "-c"},
 		Args: []string{
 			fmt.Sprint(
-				"iptables -t nat -N PROXY_INIT_REDIRECT;",
-				"iptables -t nat -A PROXY_INIT_REDIRECT -p tcp -j REDIRECT --to-port 13041;",
-				"iptables -t nat -A PREROUTING -j PROXY_INIT_REDIRECT;",
-				"iptables -t nat -N PROXY_INIT_OUTPUT;",
-				"iptables -t nat -A PROXY_INIT_OUTPUT -m owner --uid-owner 1303 -j RETURN;",
-				"iptables -t nat -A PROXY_INIT_OUTPUT -o lo -j RETURN;",
-				"iptables -t nat -A PROXY_INIT_OUTPUT -p tcp -j REDIRECT --to-port 13031;",
-				"iptables -t nat -A OUTPUT -j PROXY_INIT_OUTPUT;",
+				// INBOUND RULES
+				// Create INBOUND_REDIRECT chain and attach it to the 'nat' table
+				fmt.Sprintf("iptables -t nat -N %s;", consts.InboundChainName),
+				// Redirect all incoming TCP packets to port 13041 (to which Envoy proxy is configured to listen for incoming traffic)
+				fmt.Sprintf("iptables -t nat -A %s -p tcp -j REDIRECT --to-port %d;", consts.InboundChainName, consts.IngressTcpPort),
+				// Make PREROUTING chain (first chain a packet traverses inbound) send packets to INBOUND_REDIRECT chain
+				fmt.Sprintf("iptables -t nat -A PREROUTING -j %s;", consts.InboundChainName),
+
+				// OUTBOUND RULES
+				// Create OUTBOUND_REDIRECT chain and attach it to the 'nat' table
+				fmt.Sprintf("iptables -t nat -N %s;", consts.OutboundChainName),
+				// Skip next rules in OUTBOUND_REDIRECT chain for packets owned by the proxy (uid 1303) and return to the previous chain
+				fmt.Sprintf("iptables -t nat -A %s -m owner --uid-owner %d -j RETURN;", consts.OutboundChainName, consts.ProxyUid),
+				// Skip next rules in OUTBOUND_REDIRECT chain for packets sent to the loopback interface and return to the previous chain
+				fmt.Sprintf("iptables -t nat -A %s -o lo -j RETURN;", consts.OutboundChainName),
+				// Redirect all outgoing TCP packets to port 13031 (to which Envoy proxy is configured to listen for outgoing traffic)
+				fmt.Sprintf("iptables -t nat -A %s -p tcp -j REDIRECT --to-port %d;", consts.OutboundChainName, consts.EgressTcpPort),
+				// Make OUTPUT chain (second-last chain a packet traverses outbound) send packets to OUTBOUND_REDIRECT chain
+				fmt.Sprintf("iptables -t nat -A OUTPUT -j %s;", consts.OutboundChainName),
 			),
 		},
 		SecurityContext: &corev1.SecurityContext{
@@ -128,6 +144,7 @@ func (m *mutator) injectInit(pod *corev1.Pod) {
 	pod.Spec.InitContainers = append([]corev1.Container{initContainer}, pod.Spec.InitContainers...)
 }
 
+// injectEnvVars adds two environment variables to be used by various tools
 func injectEnvVars(pod *corev1.Pod) {
 	for i := range pod.Spec.Containers {
 		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env,
@@ -143,6 +160,7 @@ func injectEnvVars(pod *corev1.Pod) {
 	}
 }
 
+// injectSecCtxs adds a security context to each pod's container
 func injectSecCtxs(pod *corev1.Pod) {
 	privileged := false
 	for i := range pod.Spec.Containers {
@@ -153,9 +171,12 @@ func injectSecCtxs(pod *corev1.Pod) {
 	}
 }
 
+// injectSidecar adds a sidecar container running the Envoy proxy image
+// that will mount the injected volume associated with the config map
+// to configure Envoy.
 func injectSidecar(pod *corev1.Pod) {
 	privileged := false
-	user := int64(1303)
+	user := int64(consts.ProxyUid)
 	sidecar := corev1.Container{
 		Name:  "proxy",
 		Image: "envoyproxy/envoy:v1.23.1",

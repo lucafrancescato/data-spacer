@@ -24,17 +24,39 @@ const (
 
 // App constants
 const (
-	DataSpaceApplyNetpolLabel    = "data-space/apply-netpol"
+	// Setting DataSpaceApplyNetpolLabel to "true" in a namespace ensures
+	// the NetworkPolicy resource is created within that namespace
+	DataSpaceApplyNetpolLabel = "data-space/apply-netpol"
+	// Setting DataSpaceApplyReconcileLabel to "true" in a namespace ensures
+	// the namespace gets reconciled by the namespace controller
 	DataSpaceApplyReconcileLabel = "data-space/apply-reconcile"
-	DataSpaceApplyWebhookLabel   = "data-space/apply-webhook"
-	DataSpaceNetpolAllowLabel    = "data-space/netpol-allow"
+	// Setting DataSpaceApplyWebhookLabel to "true" in a namespace ensures
+	// all scheduled pod in that namespace gets mutated by the webhook
+	DataSpaceApplyWebhookLabel = "data-space/apply-webhook"
+	// Setting DataSpaceNetpolAllowLabel to "true" in a namespace or pod ensures
+	// they are selected as allowed ingress sources or egress destinations by the
+	// NetworkPolicy created in the namespace that has DataSpaceApplyNetpolLabel set to "true"
+	DataSpaceNetpolAllowLabel = "data-space/netpol-allow"
 
+	// Network policy name
+	NetworkPolicyName = "data-space-network-policy"
+	// Config map name
+	ConfigMapName = "data-space-envoy-config"
+
+	// Proxy user id
+	ProxyUid = 1303
+
+	// Iptables inbound chain name
+	InboundChainName = "INBOUND_REDIRECT"
+	// Iptables outbound chain name
+	OutboundChainName = "OUTBOUND_REDIRECT"
+)
+
+// DNS constants
+const (
 	K8sAppLabel = "k8s-app"
 	KUBE_SYSTEM = "kube-system"
 	KUBE_DNS    = "kube-dns"
-
-	NetworkPolicyName = "data-space-network-policy"
-	ConfigMapName     = "data-space-envoy-config"
 )
 
 // Envoy config constants

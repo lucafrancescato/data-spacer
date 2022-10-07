@@ -20,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// InjectPodLabel adds a label (key, value pair) in the pod's metadata
 func InjectPodLabel(pod *corev1.Pod, key, value string) {
 	labels := pod.GetLabels()
 	if labels == nil {
