@@ -24,7 +24,8 @@ type TypedPerFilterConfig struct {
 	DynamicForwardProxyType DynamicForwardProxyType `yaml:"envoy.filters.http.dynamic_forward_proxy"`
 }
 type Route struct {
-	Cluster string `yaml:"cluster"`
+	Cluster       string `yaml:"cluster"`
+	PrefixRewrite string `yaml:"prefix_rewrite,omitempty"`
 }
 type Match struct {
 	Prefix string `yaml:"prefix"`
@@ -34,6 +35,8 @@ type RouteEntry struct {
 	Match                Match                `yaml:"match"`
 	Route                Route                `yaml:"route"`
 	TypedPerFilterConfig TypedPerFilterConfig `yaml:"typed_per_filter_config,omitempty"`
+	// Per-route statistics prefix name
+	StatPrefix string `yaml:"stat_prefix,omitempty"`
 }
 type VirtualHost struct {
 	Name    string   `yaml:"name"`

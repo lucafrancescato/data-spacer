@@ -440,10 +440,27 @@ func forgeEnvoyConfig() *EnvoyConfig {
 														{
 															Name: "egress_forward_rewrite_route",
 															Match: Match{
+																Prefix: "/host-rewrite/", // Trailing slash requires its own RouteEntry
+															},
+															Route: Route{
+																Cluster:       consts.EgressForwardClusterName,
+																PrefixRewrite: "/",
+															},
+															TypedPerFilterConfig: TypedPerFilterConfig{
+																DynamicForwardProxyType: DynamicForwardProxyType{
+																	Type:               consts.DynamicForwardProxyRouteTypeUrl,
+																	HostRewriteLiteral: "dst-svc.dst-ns.svc.cluster.local",
+																},
+															},
+														},
+														{
+															Name: "egress_forward_rewrite_route",
+															Match: Match{
 																Prefix: "/host-rewrite",
 															},
 															Route: Route{
-																Cluster: consts.EgressForwardClusterName,
+																Cluster:       consts.EgressForwardClusterName,
+																PrefixRewrite: "/",
 															},
 															TypedPerFilterConfig: TypedPerFilterConfig{
 																DynamicForwardProxyType: DynamicForwardProxyType{
