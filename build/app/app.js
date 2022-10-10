@@ -18,7 +18,7 @@ app.get(`/data`, async (req, res, next) => {
   try {
     const result = await axios({
       method: "GET",
-      url: `http://${process.env.HOST_NAME}:${process.env.HOST_PORT}`,
+      url: `http://${process.env.HOST_NAME}:${process.env.HOST_PORT}/products`,
     });
 
     res.status(200).send(result.data);
