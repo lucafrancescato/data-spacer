@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: app-space
+  name: app-ns
   labels:
     data-space/apply-netpol: "true"
     data-space/apply-reconcile: "true"

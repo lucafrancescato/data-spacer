@@ -448,7 +448,7 @@ func forgeEnvoyConfig() *EnvoyConfig {
 															TypedPerFilterConfig: TypedPerFilterConfig{
 																DynamicForwardProxyType: DynamicForwardProxyType{
 																	Type:               consts.DynamicForwardProxyRouteTypeUrl,
-																	HostRewriteLiteral: "dst-svc.dst-space.svc.cluster.local",
+																	HostRewriteLiteral: "dst-svc.dst-ns.svc.cluster.local",
 																},
 															},
 														},
