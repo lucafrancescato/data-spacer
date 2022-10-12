@@ -221,23 +221,7 @@ func forgeNetworkPolicy(namespaceName string) *netv1.NetworkPolicy {
 			},
 			Ingress: []netv1.NetworkPolicyIngressRule{{
 				From: []netv1.NetworkPolicyPeer{
-					// OR-ed
-					{
-						// For pods in matching namespaces
-						NamespaceSelector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								consts.DataSpaceNetpolAllowLabel: "true",
-							},
-						},
-					},
-					{
-						// For matching pods in the NetworkPolicy's namespace
-						PodSelector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								consts.DataSpaceNetpolAllowLabel: "true",
-							},
-						},
-					},
+					// Allow all sources
 				},
 			}},
 			Egress: []netv1.NetworkPolicyEgressRule{{
