@@ -27,9 +27,6 @@ const (
 	// Setting DataSpaceApplyNetpolLabel to "true" in a namespace ensures
 	// the NetworkPolicy resource is created within that namespace
 	DataSpaceApplyNetpolLabel = "data-space/apply-netpol"
-	// Setting DataSpaceApplyReconcileLabel to "true" in a namespace ensures
-	// the namespace gets reconciled by the namespace controller
-	DataSpaceApplyReconcileLabel = "data-space/apply-reconcile"
 	// Setting DataSpaceApplyWebhookLabel to "true" in a namespace ensures
 	// all scheduled pod in that namespace gets mutated by the webhook
 	DataSpaceApplyWebhookLabel = "data-space/apply-webhook"
@@ -37,6 +34,10 @@ const (
 	// they are selected as allowed ingress sources or egress destinations by the
 	// NetworkPolicy created in the namespace that has DataSpaceApplyNetpolLabel set to "true"
 	DataSpaceNetpolAllowLabel = "data-space/netpol-allow"
+
+	// RemoteClusterIdLabel is the cluster ID of a remote cluster that
+	// has established a Liqo peering with the local cluster
+	RemoteClusterIdLabel = "liqo.io/remote-cluster-id"
 
 	// Network policy name
 	NetworkPolicyName = "data-space-network-policy"

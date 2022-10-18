@@ -97,30 +97,30 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	// Check the presence and value of the specificed label
-	if v, ok := namespace.Labels[consts.DataSpaceApplyNetpolLabel]; !ok || v != "true" {
-		// Namespace does not contain the label: delete relevant NetworkPolicy if found
-		klog.Infof("Namespace %q does not contain label %q: trying to delete NetworkPolicy %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceApplyNetpolLabel, "true"), npNsName)
+	// Check the "apply network policy" label
+	if v, ok := namespace.Labels[consts.DataSpaceApplyNetpolLabel]; ok && v == "false" {
+		// Namespace label set to false: delete relevant NetworkPolicy if found
+		klog.Infof("Namespace %q contains label %q: trying to delete NetworkPolicy %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceApplyNetpolLabel, "false"), npNsName)
 		if err := r.deleteNetworkPolicy(ctx, npNsName); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
-		// Namespace contains the label: create NetworkPolicy if not found
+		// Namespace label not set to false: create NetworkPolicy if not found
 		networkPolicy := forgeNetworkPolicy(nsName.Name)
 		if err := r.createNetworkPolicy(ctx, nsName.Name, networkPolicy); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
 
-	// Check the presence and value of the specificed label
-	if v, ok := namespace.Labels[consts.DataSpaceApplyWebhookLabel]; !ok || v != "true" {
-		// Namespace does not contain the label: delete relevant ConfigMap if found
-		klog.Infof("Namespace %q does not contain label %q: trying to delete ConfigMap %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceApplyWebhookLabel, "true"), cmNsName)
+	// Check the "apply webhook" label
+	if v, ok := namespace.Labels[consts.DataSpaceApplyWebhookLabel]; ok && v == "false" {
+		// Namespace label set to false: delete relevant ConfigMap if found
+		klog.Infof("Namespace %q contains label %q: trying to delete ConfigMap %q", nsName.Name, fmt.Sprintf("%s:%s", consts.DataSpaceApplyWebhookLabel, "false"), cmNsName)
 		if err := r.deleteConfigMap(ctx, cmNsName); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
-		// Namespace contains the label: create ConfigMap if not found
+		// Namespace label not set to false: create ConfigMap if not found
 		configMap, err := forgeConfigMap(nsName.Name)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -614,9 +614,10 @@ func forgeEnvoyConfig() *EnvoyConfig {
 func (r *NamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// namespacePredicate selects those namespaces matching the provided label
 	namespacePredicate, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			consts.DataSpaceApplyReconcileLabel: "true",
-		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{{
+			Key:      consts.RemoteClusterIdLabel,
+			Operator: metav1.LabelSelectorOpExists,
+		}},
 	})
 	if err != nil {
 		klog.Error(err)

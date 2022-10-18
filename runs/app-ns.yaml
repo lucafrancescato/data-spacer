@@ -4,6 +4,3 @@ metadata:
   name: app-ns
   labels:
     data-space/apply-netpol: "true"
-    data-space/apply-reconcile: "true"
-    data-space/apply-webhook: "true"
-    data-space/netpol-allow: "true"

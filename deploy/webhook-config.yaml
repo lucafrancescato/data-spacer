@@ -11,8 +11,10 @@ webhooks:
     namespaceSelector:
       matchExpressions:
         - key: data-space/apply-webhook
-          operator: In
-          values: ["true"]
+          operator: NotIn
+          values: ["false"]
+        - key: liqo.io/remote-cluster-id
+          operator: Exists
     rules:
       - apiGroups: [""]
         apiVersions: ["v1"]

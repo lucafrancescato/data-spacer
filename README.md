@@ -22,17 +22,22 @@ The **runs** folder contains the manifests required to deploy the example applic
 The main concepts are visualized in the following image:
 ![Project schema](data-spacer.png)
 
-The Foreign Cluster establishes a peering session with the Host Cluster, to which it offloads its _app-ns_ and so its _app_ pod. The _app-ns_ in the Host Cluster, thanks to its labels, is reconciled by the namespace controller (_data-space/apply-reconcile: true_) and is enriched with two Kubernetes resources:
+The Foreign Cluster establishes a peering session with the Host Cluster, to which it offloads its _app-ns_ and so its _app_ pod. The _app-ns_ in the Host Cluster is reconciled by the namespace controller (_liqo.io/remote-cluster-id_) and is enriched by default with two Kubernetes resources:
 
-- a ConfigMap that stores the proper Envoy Proxy configuration required to mutate the pod and inject a proxy sidecar (_data-space/apply-webhook=true_);
-- a NetworkPolicy for controlling egress and ingress traffic from the mutated pod (_data-space/apply-netpol=true_)
+- a ConfigMap that stores the proper Envoy Proxy configuration required to mutate the pod and inject a proxy sidecar (setting _data-space/apply-webhook=false_ will prevent this);
+- a NetworkPolicy for controlling egress and ingress traffic from the mutated pod (setting _data-space/apply-netpol=false_ will prevent this).
 
 ## How it works
 
-The controller's reconcile logic watches and handles Namespace resources that are labeled with _data-space/apply-reconcile=true_. Among them:
+The controller's reconcile logic watches and handles Namespace resources that are labeled with _liqo.io/remote-cluster-id_. These namespaces are enriched by default with:
 
-- those labeled with _data-space/apply-webhook=true_ will be enriched with a ConfigMap resource that will contain the Envoy Proxy configuration to be used by the webhook to inject the proxy sidecar into all pods hosted on the same namespace;
-- those labeled with _data-space/apply-netpol=true_ will be enriched with a NetworkPolicy resource that only allows egress destinations and ingress sources labeled with _data-space/netpol-allow=true_.
+- a ConfigMap resource that will contain the Envoy Proxy configuration to be used by the webhook to inject the proxy sidecar into all pods hosted on the same namespace;
+- a NetworkPolicy resource that only allows egress destinations and ingress sources labeled with _data-space/netpol-allow=true_.
+
+However, it is possible to prevent the creation of one or both of those two resources by respectively setting the following labels on Namespace resources:
+
+- _data-space/apply-webhook=false_. This also prevents pods executed in such namespaces from being mutated by the mutating webhook.
+- _data-space/apply-netpol=false_
 
 The **build/webserver** Node.js application exemplifies a web server exposing a set of data under two endpoints, _/products_ and _/products/:id_.
 The **build/app** Node.js application exemplifies a client that makes HTTP requests. To make the interaction easier, this application also works as a web server by exposing an endpoint under _/custom?url_ that lets users choose the endpoint to make the HTTP request to. ALternatively, the _/data_ endpoint performs an HTTP request to the other web server's _/products_ endpoint.
