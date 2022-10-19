@@ -20,10 +20,10 @@ spec:
       containers:
         - args:
             - --leader-elect
-            - --init-image=lucafrancescato/alpine:latest
+            - --init-image=alpine:latest
           command:
             - /manager
-          image: lucafrancescato/data-spacer:latest
+          image: data-spacer:latest
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:

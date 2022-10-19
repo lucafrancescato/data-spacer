@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: webserver
-          image: lucafrancescato/webserver:latest
+          image: webserver:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
