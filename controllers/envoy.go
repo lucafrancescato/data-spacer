@@ -16,6 +16,9 @@ limitations under the License.
 
 package controllers
 
+type AdminConfig struct {
+	ConfigId string `yaml:"config_id"`
+}
 type DynamicForwardProxyType struct {
 	Type               string `yaml:"@type"`
 	HostRewriteLiteral string `yaml:"host_rewrite_literal"`
@@ -44,6 +47,9 @@ type VirtualHost struct {
 	// Order matters: first matching route is used
 	Routes []RouteEntry `yaml:"routes"`
 }
+type CommonConfig struct {
+	AdminConfig AdminConfig `yaml:"admin_config"`
+}
 type DnsCacheConfig struct {
 	Name            string `yaml:"name"`
 	DnsLookupFamily string `yaml:"dns_lookup_family"`
@@ -60,6 +66,7 @@ type TypedConfig struct {
 	HttpFilters    []NameAndConfig `yaml:"http_filters,omitempty"`
 	RouteConfig    RouteConfig     `yaml:"route_config,omitempty"`
 	DnsCacheConfig DnsCacheConfig  `yaml:"dns_cache_config,omitempty"`
+	CommonConfig   CommonConfig    `yaml:"common_config,omitempty"`
 }
 type NameAndConfig struct {
 	Name        string      `yaml:"name"`

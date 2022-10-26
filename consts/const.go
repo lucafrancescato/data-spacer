@@ -76,6 +76,8 @@ const (
 	IngressTcpStatPrefixName  = "ingress_tcp"
 	EgressHttpStatPrefixName  = "egress_http"
 	IngressHttpStatPrefixName = "ingress_http"
+	EgressHttpTapConfigId     = "tap_egress_http_id"
+	IngressHttpTapConfigId    = "tap_ingress_http_id"
 )
 
 // Envoy API constants
@@ -91,6 +93,8 @@ const (
 	DynamicForwardProxyRouteTypeUrl    = "type.googleapis.com/envoy.extensions.filters.http.dynamic_forward_proxy.v3.PerRouteConfig"
 	DynamicForwardProxyClusterTypeName = "envoy.clusters.dynamic_forward_proxy"
 	DynamicForwardProxyClusterTypeUrl  = "type.googleapis.com/envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig"
+	HttpTapTypeName                    = "envoy.filters.http.tap"
+	HttpTapTypeUrl                     = "type.googleapis.com/envoy.extensions.filters.http.tap.v3.Tap"
 	RouterTypeName                     = "envoy.filters.http.router"
 	RouterTypeUrl                      = "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
 	AccessLogTypeName                  = "envoy.access_loggers.stdout"
@@ -98,4 +102,5 @@ const (
 	OriginalDstType                    = "ORIGINAL_DST"
 	OriginalDstLbPolicy                = "CLUSTER_PROVIDED"
 	Ipv4Only                           = "V4_ONLY"
+	JsonBodyAsString                   = "JSON_BODY_AS_STRING"
 )

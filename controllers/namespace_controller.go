@@ -406,6 +406,18 @@ func forgeEnvoyConfig() *EnvoyConfig {
 													},
 												},
 											},
+											// Tap HTTP egress traffic
+											{
+												Name: consts.HttpTapTypeName,
+												TypedConfig: TypedConfig{
+													Type: consts.HttpTapTypeUrl,
+													CommonConfig: CommonConfig{
+														AdminConfig: AdminConfig{
+															ConfigId: consts.EgressHttpTapConfigId,
+														},
+													},
+												},
+											},
 											// Router
 											{
 												Name: consts.RouterTypeName,
@@ -473,6 +485,18 @@ func forgeEnvoyConfig() *EnvoyConfig {
 													DnsCacheConfig: DnsCacheConfig{
 														Name:            consts.DnsCacheConfigName,
 														DnsLookupFamily: consts.Ipv4Only,
+													},
+												},
+											},
+											// Tap HTTP ingress traffic
+											{
+												Name: consts.HttpTapTypeName,
+												TypedConfig: TypedConfig{
+													Type: consts.HttpTapTypeUrl,
+													CommonConfig: CommonConfig{
+														AdminConfig: AdminConfig{
+															ConfigId: consts.IngressHttpTapConfigId,
+														},
 													},
 												},
 											},
