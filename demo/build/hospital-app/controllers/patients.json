@@ -1,0 +1,99 @@
+[
+  {
+    "id": 0,
+    "name": "John",
+    "address": "Address 0",
+    "picture": "john.jpg",
+    "age": 38,
+    "medicalExaminations": 2,
+    "children": 2,
+    "risk": "LOW",
+    "registration": "2022-04-25",
+    "health-condition": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+  },
+
+  {
+    "id": 1,
+    "name": "Mary",
+    "address": "Address 1",
+    "picture": "mary.jpg",
+    "age": 49,
+    "medicalExaminations": 5,
+    "children": 3,
+    "risk": "HIGH",
+    "registration": "2022-08-08",
+    "health-condition": "Consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+  },
+  {
+    "id": 2,
+    "name": "Jim",
+    "address": "Address 2",
+    "age": 25,
+    "picture": "jim.jpg",
+    "medicalExaminations": 3,
+    "children": 0,
+    "risk": "LOW",
+    "registration": "2021-12-01",
+    "health-condition": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam."
+  },
+  {
+    "id": 3,
+    "name": "Charles",
+    "address": "Address 3",
+    "picture": "charles.jpg",
+    "age": 73,
+    "medicalExaminations": 8,
+    "children": 1,
+    "risk": "MEDIUM",
+    "registration": "2021-03-02",
+    "health-condition": "Excepteur sint occaecat cupidatat non proident."
+  },
+  {
+    "id": 4,
+    "name": "Elizabeth",
+    "address": "Address 4",
+    "picture": "elizabeth.jpg",
+    "age": 65,
+    "medicalExaminations": 3,
+    "children": 2,
+    "risk": "LOW",
+    "registration": "2022-10-07",
+    "health-condition": "Lorem ipsum dolor sit amet, consectetur adipisicing elit."
+  },
+  {
+    "id": 5,
+    "name": "Greg",
+    "address": "Address 5",
+    "picture": "greg.jpg",
+    "age": 58,
+    "medicalExaminations": 7,
+    "children": 4,
+    "risk": "HIGH",
+    "registration": "2022-03-14",
+    "health-condition": "Nisi ut aliquip ex ea commodo consequat."
+  },
+  {
+    "id": 6,
+    "name": "Richard",
+    "address": "Address 6",
+    "picture": "richard.jpg",
+    "age": 41,
+    "medicalExaminations": 1,
+    "children": 0,
+    "risk": "MEDIUM",
+    "registration": "2022-03-15",
+    "health-condition": "Sunt in culpa qui officia deserunt mollit anim id est laborum."
+  },
+  {
+    "id": 7,
+    "name": "Rita",
+    "address": "Address 7",
+    "picture": "rita.jpg",
+    "age": 82,
+    "medicalExaminations": 4,
+    "children": 2,
+    "risk": "HIGH",
+    "registration": "2022-06-15",
+    "health-condition": "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+  }
+]

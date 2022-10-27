@@ -20,10 +20,10 @@ spec:
       containers:
         - args:
             - --leader-elect
-            - --init-image=alpine:latest
+            - --init-image=alpine-iptables:1.0
           command:
             - /manager
-          image: data-spacer:latest
+          image: data-spacer:1.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:

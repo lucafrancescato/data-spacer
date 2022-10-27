@@ -1,38 +1,37 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: dst-svc
-  namespace: dst-ns
+  name: patient-data
+  namespace: hospital-space
 spec:
   ports:
     - name: http
       port: 80
-      protocol: TCP
       targetPort: http
   selector:
-    app: webserver
+    app: hospital
   type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webserver
-  namespace: dst-ns
+  name: hospital
+  namespace: hospital-space
   labels:
-    app: webserver
+    app: hospital
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: webserver
+      app: hospital
   template:
     metadata:
       labels:
-        app: webserver
+        app: hospital
     spec:
       containers:
-        - name: webserver
-          image: webserver:latest
+        - name: hospital-app
+          image: hospital-app:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

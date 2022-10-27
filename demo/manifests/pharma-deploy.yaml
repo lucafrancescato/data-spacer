@@ -1,25 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app
-  namespace: app-ns
+  name: pharma
+  namespace: pharma-space
   labels:
-    run: app
+    app: pharma
 spec:
   replicas: 1
   selector:
     matchLabels:
-      run: app
+      app: pharma
   template:
     metadata:
       labels:
-        run: app
+        app: pharma
     spec:
       containers:
-        - name: app
-          image: app:latest
+        - name: pharma-app
+          image: pharma-app:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: web
               containerPort: 80
-              protocol: TCP

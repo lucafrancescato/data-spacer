@@ -4,14 +4,14 @@ import { fileURLToPath } from "url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 
-const products = JSON.parse(fs.readFileSync(`${currentDir}/products.json`));
+const patients = JSON.parse(fs.readFileSync(`${currentDir}/patients.json`));
 
-const getProducts = async (req, res, next) => {
+const getPatients = async (req, res, next) => {
   try {
     res.status(200).json({
       res: {
-        length: products.length,
-        data: products,
+        length: patients.length,
+        data: patients,
       },
     });
   } catch (err) {
@@ -19,20 +19,20 @@ const getProducts = async (req, res, next) => {
   }
 };
 
-const getProduct = async (req, res, next) => {
+const getPatient = async (req, res, next) => {
   const id = req.params.id;
 
-  const prod = products.find((el) => el.id == id);
-  if (!prod)
+  const patient = patients.find((el) => el.id == id);
+  if (!patient)
     return next({
-      message: "Il prodotto specificato non è stato trovato",
+      message: "Il paziente specificato non è stato trovato",
       status: 404,
     });
 
   try {
     res.status(200).json({
       res: {
-        data: prod,
+        data: patient,
       },
     });
   } catch (err) {
@@ -41,6 +41,6 @@ const getProduct = async (req, res, next) => {
 };
 
 export default {
-  getProducts,
-  getProduct,
+  getPatients,
+  getPatient,
 };

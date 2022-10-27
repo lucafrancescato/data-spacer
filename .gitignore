@@ -26,5 +26,5 @@ Dockerfile.cross
 *~
 .vscode
 
-build/app/node_modules
-build/webserver/node_modules
+demo/build/pharma-app/node_modules
+demo/build/hospital-app/node_modules

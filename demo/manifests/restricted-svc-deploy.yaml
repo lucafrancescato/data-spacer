@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: restricted-data
+  namespace: restricted-space
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app: restricted
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restricted
+  namespace: restricted-space
+  labels:
+    app: restricted
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restricted
+  template:
+    metadata:
+      labels:
+        app: restricted
+    spec:
+      containers:
+        - name: restricted-app
+          image: hospital-app:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http

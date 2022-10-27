@@ -1,7 +1,7 @@
 import express from "express";
 import morgan from "morgan";
 
-import productRouter from "./routes/productRouter.js";
+import patientRouter from "./routes/patientRouter.js";
 
 // Start up the Express app
 const app = express();
@@ -12,7 +12,7 @@ app.use(morgan("dev"));
 // Parse JSON body into req.body
 app.use(express.json());
 
-app.use("/products", productRouter);
+app.use("/patients", patientRouter);
 
 // Handle errors
 app.use((err, req, res, next) => {
