@@ -68,7 +68,7 @@ However, it is possible to prevent the creation of one or both of those two reso
 
 The **demo/build/hospital-app** Node.js application exemplifies a web server exposing some _fictional_ data about some patients under two endpoints, _/patients_ and _/patients/:id_.
 
-The **demo/build/pharma-app** Node.js application exemplifies a client that makes HTTP requests. To make the interaction easier, this application also works as a web server by exposing an endpoint under _/simulate?url_ that lets users choose the endpoint to make the HTTP request to. Alternatively, the _/processed-data_ endpoint performs an HTTP request to the other hospital-app's _/patients_ endpoint.
+The **demo/build/pharma-app** Node.js application exemplifies a client that makes HTTP requests. To make the interaction easier, this application also works as a web server by exposing the endpoint _/results_, to perform an HTTP request to the other hospital-app's _/patients_ endpoint, as well as the endpoint _/process/:n_, which simulates the pharma-app's continuos work of retrieving and processing data exposed by the hospital, by iterating _n_ times an HTTP request on a random patient's data.
 
 ## License
 

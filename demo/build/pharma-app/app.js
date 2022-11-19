@@ -2,6 +2,9 @@ import axios from "axios";
 import express from "express";
 import morgan from "morgan";
 
+const MIN = 1;
+const MAX = 101;
+
 // Start up the Express app
 const app = express();
 
@@ -14,7 +17,7 @@ app.use(express.json());
 //
 // GET endpoints
 //
-app.get(`/processed-data`, async (req, res, next) => {
+app.get(`/results`, async (req, res, next) => {
   try {
     const result = await axios({
       method: "GET",
@@ -27,9 +30,8 @@ app.get(`/processed-data`, async (req, res, next) => {
     let n = 0;
     for (const el of result.data.res.data) {
       if (el.risk == "LOW") continue;
-      if (!el.registration.startsWith("2022")) continue;
       sumAge += el.age;
-      sumExams += el.medicalExaminations;
+      sumExams += el.medicalExams;
       sumChildren += el.children;
       n++;
     }
@@ -45,25 +47,28 @@ app.get(`/processed-data`, async (req, res, next) => {
 
     res.status(200).send(processedData);
   } catch (err) {
+    console.log(err);
     next(err);
   }
 });
 
-app.get(`/simulate`, async (req, res, next) => {
-  const url = req.query.url;
-  if (url == undefined || url == "")
-    return next({ message: "Specificare l'url da cercare", status: 400 });
+app.post(`/process/:n`, async (req, res, next) => {
+  const n = parseInt(req.params.n);
 
-  try {
-    const result = await axios({
-      method: "GET",
-      url: `http://${url}`,
-    });
+  for (let i = 0; i < n; i++) {
+    try {
+      const id = Math.random() * (MAX - MIN) + MIN;
 
-    res.status(200).send(result.data);
-  } catch (err) {
-    next(err);
+      await axios({
+        method: "GET",
+        url: `http://${process.env.HOST_NAME}:${process.env.HOST_PORT}/patients/${id}`,
+      });
+    } catch (err) {
+      console.log(err);
+    }
   }
+
+  res.status(200).end();
 });
 
 // Handle errors
