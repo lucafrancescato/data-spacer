@@ -14,6 +14,12 @@ app.use(morgan("dev"));
 // Parse JSON body into req.body
 app.use(express.json());
 
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 //
 // GET endpoints
 //
@@ -57,12 +63,14 @@ app.post(`/process/:n`, async (req, res, next) => {
 
   for (let i = 0; i < n; i++) {
     try {
-      const id = Math.random() * (MAX - MIN) + MIN;
+      const id = getRandomInt(MIN, MAX);
 
-      await axios({
+      const result = await axios({
         method: "GET",
         url: `http://${process.env.HOST_NAME}:${process.env.HOST_PORT}/patients/${id}`,
       });
+
+      console.log(`n: ${n}, id: ${id}, patient: ${result.data.res.data}`);
     } catch (err) {
       console.log(err);
     }
